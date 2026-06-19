@@ -33,7 +33,6 @@ flowchart LR
 | 3. Moderation (T5) | [`moderation/`](moderation/) | Run `lmsys/toxicchat-t5-large-v1.0` toxicity classifier (locally or on Azure ML GPU) |
 | 4. Metrics | [`metrics/`](metrics/) | Compute E2E Block Rate, FP Rate, Harmful Response Rate, Not Useful Rate |
 | Data | [`data/`](data/) | Published evaluation dataset |
-| Paper | [`paper_writing/`](paper_writing/) | Paper draft |
 
 ## Data
 
