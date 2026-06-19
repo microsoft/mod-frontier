@@ -1,6 +1,6 @@
 # Graders
 
-LLM-as-judge graders used in the Goodfire rewrite paper. Two graders ship here,
+LLM-as-judge graders used in the mod-frontier paper. Two graders ship here,
 built on **one shared engine** so there is no duplicated calling/caching code:
 
 | Grader spec        | Task            | Label space | Input        | Judge model(s) |

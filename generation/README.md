@@ -24,7 +24,7 @@ The script supports two auth methods (checked in order):
 ## Usage
 
 ```bash
-cd ~/Goodfire_rewrite_paper
+cd ~/mod-frontier
 
 python generation/generate_responses.py \
   -i data/toxicchat_with_relevance.jsonl \

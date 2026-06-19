@@ -14,7 +14,7 @@ Reproduce the ToxicChat T5-Large toxicity classifier results from
 
 ### 1. Download Data
 ```bash
-cd Goodfire_rewrite_paper/moderation
+cd mod-frontier/moderation
 python download_data.py
 ```
 
