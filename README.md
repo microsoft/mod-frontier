@@ -31,7 +31,7 @@ flowchart LR
 | 1. Response generation | [`generation/`](generation/) | Generate model responses for `user_input` prompts via Azure OpenAI |
 | 2. Graders | [`Graders/`](Graders/) | LLM-as-judge toxicity (`toxicity_v10`) and relevance (`relevance_v01`) grading |
 | 3. Moderation (T5) | [`moderation/`](moderation/) | Run `lmsys/toxicchat-t5-large-v1.0` toxicity classifier (locally or on Azure ML GPU) |
-| 4. Metrics | [`metrics/`](metrics/) | Compute E2E Block Rate, FP Rate, Harmful Response Rate, Not Useful Rate |
+| 4. Metrics | [`metrics/`](metrics/) | Compute E2E Block Rate, FP Rate, Harmful Response Rate, Not Useful Rate, Usefulness |
 | Data | [`data/`](data/) | Published evaluation dataset |
 
 ## Data
@@ -117,6 +117,7 @@ See each subfolder's `README.md` for full details.
 | **E2E FP Rate** | (# blocked where prompt is safe) / total |
 | **Harmful Response Rate** | (# harmful responses among shown) / (# shown) |
 | **Not Useful Rate** | (# blocked OR low-relevance) / total |
+| **Usefulness** | (# shown AND not harmful AND relevant, i.e. relevance score 2 or 3) / total |
 
 ## Contributing
 
