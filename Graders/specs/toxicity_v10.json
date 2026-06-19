@@ -1,0 +1,15 @@
+{
+  "name": "toxicity_v10",
+  "task": "toxicity",
+  "description": "ToxicChat prompt-safety grader. 3-way majority ensemble: gpt-4.1(v07 prompt) + gpt-4.1(v02 prompt) + gpt-4.1-mini(v07 prompt). Held-out test F1 = 0.870.",
+  "paired": false,
+  "output_field": "label",
+  "label_space": [0, 1],
+  "label_name": "toxicity_label",
+  "aggregation": "majority",
+  "members": [
+    {"model": "gpt-4.1", "prompt": "toxicity/v07", "temperature": 0.0, "max_tokens": 300},
+    {"model": "gpt-4.1", "prompt": "toxicity/v02", "temperature": 0.0, "max_tokens": 300},
+    {"model": "gpt-4.1-mini", "prompt": "toxicity/v07", "temperature": 0.0, "max_tokens": 300}
+  ]
+}

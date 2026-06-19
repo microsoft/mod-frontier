@@ -1,0 +1,13 @@
+{
+  "name": "relevance_v01",
+  "task": "relevance",
+  "description": "Scores how well an assistant response addresses the user prompt on a 1-3 scale (refusal-aware). Single judge: gpt-4o.",
+  "paired": true,
+  "output_field": "relevance",
+  "label_space": [1, 2, 3],
+  "label_name": "relevance_score",
+  "aggregation": "single",
+  "members": [
+    {"model": "gpt-4o", "prompt": "relevance/v01", "temperature": 0.0, "max_tokens": 50}
+  ]
+}

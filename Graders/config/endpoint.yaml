@@ -1,0 +1,21 @@
+# Azure OpenAI endpoint configuration shared by all graders in this package.
+# NOTE: No secrets here. Authentication uses Azure AD (DefaultAzureCredential),
+# so this file is safe to commit to a public repo.
+# To authenticate locally, run `az login`.
+#
+# Set your own endpoint here, or override at runtime with environment variables:
+#   GRADERS_AZURE_ENDPOINT, GRADERS_API_VERSION, GRADERS_DEPLOYMENT
+azure_endpoint: https://<your-resource>.openai.azure.com
+api_version: "2025-01-01-preview"
+scope: https://cognitiveservices.azure.com/.default
+
+# Logical model name -> deployment name on the endpoint.
+models:
+  gpt-4o: gpt-4o-global
+  gpt-4o-mini: gpt-4o-mini
+  gpt-4.1: gpt-4.1
+  gpt-4.1-mini: gpt-4.1-mini
+  gpt-4.1-nano: gpt-4.1-nano
+  gpt-5: gpt-5
+  gpt-5-mini: gpt-5-mini
+  o3-mini: o3-mini

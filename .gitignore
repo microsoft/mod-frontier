@@ -1,0 +1,37 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ─── Virtual environments ────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ─── Grader runtime cache (regenerated on demand) ────────────────────────────
+Graders/cache/
+
+# ─── Moderation: AML job outputs & downloaded datasets (regenerable) ─────────
+moderation/outputs/
+moderation/data/
+moderation/__pycache__/
+
+# ─── Large / intermediate data (regenerable via the pipeline) ────────────────
+# The published deliverable data/toxicchat_with_GPT5Response.jsonl is committed
+# (see the negation below); other large working files are excluded.
+data/*.jsonl
+!data/toxicchat_with_GPT5Response.jsonl
+data/relshards/
+
+# ─── Secrets / local env (never commit) ──────────────────────────────────────
+.env
+*.key
+*.pem
+secrets.*
+
+# ─── OS / editor ─────────────────────────────────────────────────────────────
+.DS_Store
+.vscode/
+*.swp
