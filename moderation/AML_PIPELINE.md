@@ -11,8 +11,8 @@ source ~/.virtualenvs/openai/bin/activate
 # 1. Copy your input JSONL (must have user_input and model_output fields)
 cp /path/to/your/data.jsonl data/input_all.jsonl
 
-# 2. Run the submit script (submits to AML, polls, downloads, prints output path)
-python submit_t5_both.py
+# 2. Submit the both-fields job to AML (see the copy-paste script at the bottom
+#    of this file; it runs inference_both.py, polls, and downloads the output)
 ```
 
 ## What it does

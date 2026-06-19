@@ -472,3 +472,6 @@ secrets.*
 
 # Paper draft (kept local only, not for public repo)
 paper_writing/
+
+# Personal helper script (kept local only)
+/run_relevance_multi.sh
