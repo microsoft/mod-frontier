@@ -1,0 +1,3 @@
+=== clean checkout ===
+3b73856 Handle BatchEncoding return from batched apply_chat_template (transformers >=4.56)
+=== fresh venv + install (rewriter/requirements.txt) ===
