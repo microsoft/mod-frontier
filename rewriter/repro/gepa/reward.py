@@ -38,12 +38,15 @@ covert-refusal / empty rates). Rates go to the wandb SUMMARY, not a stepped
 series: GEPA owns the wandb step axis for its convergence curve.
 
 Credentials: ``ANTHROPIC_API_KEY`` for the harm veto; the graders use the
-sibling ``Graders/`` package and its Azure AD auth (see ``Graders/README.md``).
+sibling ``Graders/`` package and its Azure AD auth (see ``Graders/README.md``),
+or plain OpenAI when ``GRADERS_AUTH=openai`` + ``OPENAI_API_KEY`` are set.
 """
 from __future__ import annotations
 
 import asyncio
 import json
+import os
+import re
 import sys
 import threading
 from pathlib import Path
@@ -220,6 +223,10 @@ class GraderScorer:
         except ImportError:
             sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "Graders"))
             from graders.core import load_spec, run_grader
+        if os.environ.get("GRADERS_AUTH", "").lower() == "openai":
+            from rewriter.grader_transport import install
+
+            install()
 
         self._run_grader = run_grader
         self.tox_spec = load_spec("toxicity_v10")

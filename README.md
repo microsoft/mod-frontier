@@ -32,6 +32,7 @@ flowchart LR
 | 2. Graders | [`Graders/`](Graders/) | LLM-as-judge toxicity (`toxicity_v10`) and relevance (`relevance_v01`) grading |
 | 3. Moderation (T5) | [`moderation/`](moderation/) | Run `lmsys/toxicchat-t5-large-v1.0` toxicity classifier (locally or on Azure ML GPU) |
 | 4. Metrics | [`metrics/`](metrics/) | Compute E2E Block Rate, FP Rate, Harmful Response Rate, Not Useful Rate, Usefulness |
+| 5. Rewrite stage | [`rewriter/`](rewriter/) | Rewrite T5-flagged responses (probe routing + GEPA-optimized prompts + Qwen3-4B) instead of blocking them |
 | Data | [`data/`](data/) | Published evaluation dataset |
 
 ## Data
@@ -47,6 +48,12 @@ The published deliverable is committed:
   | `grader_model_output_gpt5` | LLM-judge toxicity label of the response (0/1) |
   | `relevance_score_gpt5` | LLM-judge relevance score (1–3) |
   | `T5_model_output_gpt5` | ToxicChat T5 toxicity prediction of the response (0/1) |
+
+The file also carries the rewrite-stage columns (`*_rw_probe_probe`: the
+rewrite of each T5-flagged response plus its grades and T5 re-screen, with
+pass-through semantics on unflagged rows) and the prompt-level fields
+`T5_user_input` / `grader_user_input` used by the prompt-filter scenarios and
+the FP rate — see [`rewriter/README.md`](rewriter/README.md#data-columns-added-to-datatoxicchat_with_gpt5responsejsonl).
 
 Large intermediate working files and the runtime grader cache are regenerable
 and are excluded via `.gitignore`.

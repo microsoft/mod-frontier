@@ -161,13 +161,21 @@ def write_jsonl(path: str, rows: list[dict[str, Any]]) -> None:
 
 
 def _import_graders():
-    """Import the sibling ``Graders/`` package (repo-relative, no install needed)."""
+    """Import the sibling ``Graders/`` package (repo-relative, no install needed).
+
+    With ``GRADERS_AUTH=openai`` set, the same grader specs run through plain
+    OpenAI instead of Azure AD (see ``rewriter/grader_transport.py``).
+    """
     try:
         from graders.core import load_spec, run_grader  # noqa: F401
     except ImportError:
         graders_dir = Path(__file__).resolve().parents[2] / "Graders"
         sys.path.insert(0, str(graders_dir))
         from graders.core import load_spec, run_grader  # noqa: F401
+    if os.environ.get("GRADERS_AUTH", "").lower() == "openai":
+        from rewriter.grader_transport import install
+
+        install()
     return load_spec, run_grader
 
 
