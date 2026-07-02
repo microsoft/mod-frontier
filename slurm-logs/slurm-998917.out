@@ -1,6 +1,0 @@
-=== fresh checkout at branch tip ===
-1570275 cp-7: Smoke run 3: full GPU path green (route → rewrite → T5 pass 3/3); one missing grader dependency, fixed
-=== 30-row pipeline: live probe routing -> prompt select -> rewrite ===
-5654 rows, rewriting 30 flagged rows
-Prompt pack loaded (chars): {"creative_writing": 6832, "information_seeking": 10132, "other": 4771, "unified": 2237, "refusal": 2107}
-Routing 30 rows live

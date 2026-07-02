@@ -1,33 +1,0 @@
-=== clean checkout ===
-00f6600 Add Graders package import deps (azure-identity, pyyaml) to rewriter requirements
-=== fresh venv + install (rewriter/requirements.txt) ===
-import OK, prompt pack: {'creative_writing': 6832, 'information_seeking': 10132, 'other': 4771, 'unified': 2237, 'refusal': 2107}
-=== unit tests ===
-..................................                                       [100%]
-34 passed in 0.56s
-=== 3-row end-to-end: route -> select -> rewrite ===
-5654 rows, rewriting 3 flagged rows
-Prompt pack loaded (chars): {"creative_writing": 6832, "information_seeking": 10132, "other": 4771, "unified": 2237, "refusal": 2107}
-Routing 3 rows live
-[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
-Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   9%|▉         | 36/398 [00:00<00:01, 339.13it/s]Loading weights:  18%|█▊        | 70/398 [00:00<00:01, 301.01it/s]Loading weights:  26%|██▌       | 102/398 [00:00<00:00, 305.42it/s]Loading weights:  33%|███▎      | 133/398 [00:00<00:00, 303.57it/s]Loading weights:  41%|████      | 164/398 [00:00<00:00, 292.01it/s]Loading weights:  49%|████▊     | 194/398 [00:00<00:00, 291.70it/s]Loading weights:  57%|█████▋    | 225/398 [00:00<00:00, 290.96it/s]Loading weights:  65%|██████▍   | 257/398 [00:00<00:00, 295.87it/s]Loading weights:  73%|███████▎  | 290/398 [00:00<00:00, 304.37it/s]Loading weights:  81%|████████  | 322/398 [00:01<00:00, 303.22it/s]Loading weights:  90%|████████▉ | 357/398 [00:01<00:00, 310.22it/s]Loading weights:  98%|█████████▊| 390/398 [00:01<00:00, 310.23it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 307.88it/s]
-[extract] 3/3 (3 seq/s)
-[extract] done 3 seqs in 1s
-Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<01:13,  5.38it/s]Loading weights:  15%|█▌        | 60/398 [00:00<00:01, 255.22it/s]Loading weights:  26%|██▌       | 103/398 [00:00<00:00, 319.10it/s]Loading weights:  37%|███▋      | 146/398 [00:00<00:00, 348.98it/s]Loading weights:  47%|████▋     | 187/398 [00:00<00:00, 366.74it/s]Loading weights:  58%|█████▊    | 231/398 [00:00<00:00, 386.43it/s]Loading weights:  68%|██████▊   | 272/398 [00:00<00:00, 386.02it/s]Loading weights:  78%|███████▊  | 312/398 [00:00<00:00, 388.80it/s]Loading weights:  89%|████████▉ | 356/398 [00:01<00:00, 401.52it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 360.81it/s]
-QwenRewriter initialized: model=Qwen/Qwen3-4B-Instruct-2507, dtype=torch.float16, max_new_tokens=2048
-[transformers] The following generation flags are not valid and may be ignored: ['temperature']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
-  rewrote 3/3 (22.6s batch)
-Prompt selection split: {"gepa960/information_seeking": 2, "gepa960/refusal": 1}
-Wrote 3 rewrites -> /mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/smoke_rewrites.jsonl
-=== T5 re-screen of the 3 rewrites ===
-T5 device: cuda
-Loading weights:   0%|          | 0/509 [00:00<?, ?it/s]Loading weights: 100%|██████████| 509/509 [00:00<00:00, 11052.56it/s]
-  3/3 (100.0%)
-T5 positives on rewrites: 0/3 -> /mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/smoke_t5.json
-=== grade the 3 rewrites (OpenAI transport) ===
-Grader transport: plain OpenAI (OPENAI_API_KEY)
-Grading 3 rewrites (toxicity_v10 + relevance_v01)
-Toxicity positives 0/3 (unparsed tox=0, rel=0) -> /mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/smoke_grades.jsonl
-=== assertions ===
-SMOKE OK: routes ['REWRITE', 'REWRITE', 'REFUSE'] prompts ['gepa960/information_seeking', 'gepa960/information_seeking', 'gepa960/refusal'] t5 {'0': 0, '11': 0, '28': 0} grades [(0, 3), (0, 3), (0, 3)]
-=== SMOKE PASSED ===
