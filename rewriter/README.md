@@ -150,7 +150,9 @@ Everything upstream of the shipped prompt packs lives in [`repro/`](repro/)
    GPU-hours + reflection-model API calls.
 3. **End-to-end eval** — `pipeline.py` + `eval_e2e.py` as above.
 
-Regenerated rewrites are not byte-identical (GPU batching nondeterminism even
-at temperature 0), so reproduction targets the metric level: on a fixed
-30-row sample we verify T5-pass and harmlessness land inside the committed
-run's 95% CIs.
+Regenerated rewrites are not fully byte-identical (GPU batching
+nondeterminism even at temperature 0), so reproduction targets the metric
+level. On a fixed 30-row sample, a regeneration through this package matched
+the committed run exactly: identical routing on 30/30 rows, identical T5-pass
+(25/30, same rows), identical harmlessness (29/30, same row, blocked in
+both), 23/30 rewrites byte-identical.
