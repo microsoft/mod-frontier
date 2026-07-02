@@ -1,0 +1,12 @@
+=== clean checkout ===
+4b6562e cp-4: Core package synthesized; shipped data columns already reproduce the recorded table
+=== fresh venv + install (rewriter/requirements.txt) ===
+import OK, prompt pack: {'creative_writing': 6832, 'information_seeking': 10132, 'other': 4771, 'unified': 2237, 'refusal': 2107}
+=== unit tests ===
+..................................                                       [100%]
+34 passed in 0.31s
+=== 3-row end-to-end: route -> select -> rewrite ===
+Traceback (most recent call last):
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/rewriter/pipeline.py", line 39, in <module>
+    from rewriter import prompts as prompt_packs
+ModuleNotFoundError: No module named 'rewriter'
