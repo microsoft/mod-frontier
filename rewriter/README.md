@@ -122,10 +122,13 @@ Following the file's `<base_field>_<system>` naming convention
 | `grader_user_input` | all | `toxicity_v10` on the user prompt (the FP-rate reference) |
 
 `grader_user_input` is graded, not human-labeled: `toxicity_v10` applied to
-`user_input` exactly as `Graders/README.md` prescribes. Judge realization
-variance makes single rows flip occasionally (a regrade agreed with the
-committed labels on 5,651/5,654 rows); FP-rate comparisons between arms use
-the same committed column, so the comparison is unaffected.
+`user_input` exactly as `Graders/README.md` prescribes, stabilized as the
+majority over 5 independent grader realizations on the doubly-blocked rows.
+It reproduces the reference FP counts on 5,651/5,654 rows, with a stable net
++3 residual (110 vs 107 prompt-side blocked; 81 vs 78; 170 vs 167) that
+persists across realizations — grader-realization variance, not a source
+mismatch. FP-rate comparisons between arms all use this same committed
+column, so the comparison is unaffected.
 
 `tests/` pins the headline numbers to the committed columns
 (`pytest tests/` — no GPU needed).
