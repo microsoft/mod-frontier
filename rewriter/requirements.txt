@@ -1,0 +1,13 @@
+# Rewrite-stage runtime (rewriter/pipeline.py + eval_e2e.py).
+#
+# The routing probe is pinned to the exact revision the end-to-end numbers
+# were measured with (calibrated domain routing included). It installs the
+# frozen Qwen3-4B backbone dependencies (torch/transformers) transitively,
+# but they are listed explicitly here because the rewriter uses them
+# directly too.
+torch>=2.3
+transformers>=4.51
+accelerate>=0.30
+numpy>=1.26
+openai>=1.40          # graders (Azure AD path is in Graders/; OpenAI-key fallback in rewriter/grader_transport.py)
+safeflow-routing-probe @ git+https://github.com/goodfire-ai/safeflow-routing-probe.git@17ba733825f4bb84b53f06395cca34fb59ffbf20
