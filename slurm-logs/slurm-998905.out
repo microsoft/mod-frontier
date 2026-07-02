@@ -1,0 +1,2 @@
+=== clean checkout ===
+00f6600 Add Graders package import deps (azure-identity, pyyaml) to rewriter requirements

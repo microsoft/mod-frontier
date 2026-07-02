@@ -1,3 +1,44 @@
 === clean checkout ===
 3b73856 Handle BatchEncoding return from batched apply_chat_template (transformers >=4.56)
 === fresh venv + install (rewriter/requirements.txt) ===
+import OK, prompt pack: {'creative_writing': 6832, 'information_seeking': 10132, 'other': 4771, 'unified': 2237, 'refusal': 2107}
+=== unit tests ===
+..................................                                       [100%]
+34 passed in 0.43s
+=== 3-row end-to-end: route -> select -> rewrite ===
+5654 rows, rewriting 3 flagged rows
+Prompt pack loaded (chars): {"creative_writing": 6832, "information_seeking": 10132, "other": 4771, "unified": 2237, "refusal": 2107}
+Routing 3 rows live
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<00:51,  7.65it/s]Loading weights:  10%|▉         | 38/398 [00:00<00:01, 189.63it/s]Loading weights:  19%|█▉        | 75/398 [00:00<00:01, 264.39it/s]Loading weights:  28%|██▊       | 111/398 [00:00<00:00, 299.39it/s]Loading weights:  37%|███▋      | 146/398 [00:00<00:00, 311.57it/s]Loading weights:  45%|████▌     | 180/398 [00:00<00:00, 307.70it/s]Loading weights:  55%|█████▍    | 218/398 [00:00<00:00, 328.99it/s]Loading weights:  63%|██████▎   | 252/398 [00:00<00:00, 331.83it/s]Loading weights:  73%|███████▎  | 289/398 [00:00<00:00, 340.41it/s]Loading weights:  81%|████████▏ | 324/398 [00:01<00:00, 333.97it/s]Loading weights:  91%|█████████ | 363/398 [00:01<00:00, 349.72it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 314.24it/s]
+[extract] 3/3 (4 seq/s)
+[extract] done 3 seqs in 1s
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<01:21,  4.90it/s]Loading weights:  12%|█▏        | 48/398 [00:00<00:01, 189.32it/s]Loading weights:  23%|██▎       | 92/398 [00:00<00:01, 278.95it/s]Loading weights:  33%|███▎      | 132/398 [00:00<00:00, 318.07it/s]Loading weights:  43%|████▎     | 170/398 [00:00<00:00, 336.42it/s]Loading weights:  53%|█████▎    | 212/398 [00:00<00:00, 349.41it/s]Loading weights:  64%|██████▎   | 253/398 [00:00<00:00, 361.79it/s]Loading weights:  73%|███████▎  | 291/398 [00:00<00:00, 362.27it/s]Loading weights:  84%|████████▎ | 333/398 [00:01<00:00, 377.76it/s]Loading weights:  94%|█████████▍| 374/398 [00:01<00:00, 382.71it/s]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 332.77it/s]
+QwenRewriter initialized: model=Qwen/Qwen3-4B-Instruct-2507, dtype=torch.float16, max_new_tokens=2048
+[transformers] The following generation flags are not valid and may be ignored: ['temperature']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+  rewrote 3/3 (34.0s batch)
+Prompt selection split: {"gepa960/information_seeking": 2, "gepa960/refusal": 1}
+Wrote 3 rewrites -> /mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/smoke_rewrites.jsonl
+=== T5 re-screen of the 3 rewrites ===
+T5 device: cuda
+Loading weights:   0%|          | 0/509 [00:00<?, ?it/s]Loading weights: 100%|██████████| 509/509 [00:00<00:00, 10812.47it/s]
+  3/3 (100.0%)
+T5 positives on rewrites: 0/3 -> /mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/smoke_t5.json
+=== grade the 3 rewrites (OpenAI transport) ===
+Traceback (most recent call last):
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/rewriter/eval_e2e.py", line 433, in <module>
+    main()
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/rewriter/eval_e2e.py", line 429, in main
+    args.fn(args)
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/rewriter/eval_e2e.py", line 189, in cmd_grade
+    core = graders_core(args.grader_auth)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/rewriter/eval_e2e.py", line 103, in graders_core
+    from graders import core
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/Graders/graders/__init__.py", line 3, in <module>
+    from graders.core import (
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/Graders/graders/core.py", line 36, in <module>
+    from graders.azure_client import AzureChatClient, is_reasoning_model
+  File "/mnt/data/artifacts/silico/experiments/_flat/exp_01kwhjv6gff59rkaz94fde04qq/verify/checkout/Graders/graders/azure_client.py", line 15, in <module>
+    from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
+ModuleNotFoundError: No module named 'azure'
