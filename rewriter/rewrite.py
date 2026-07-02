@@ -325,9 +325,11 @@ class QwenRewriter:
             return_tensors="pt",
             padding=True,
             truncation=True,
+            return_dict=True,
         )
-        if not isinstance(enc, dict):
-            enc = {"input_ids": enc}
+        # BatchEncoding is a UserDict, not a dict -- normalize to a plain dict
+        # of the tensors generate() consumes.
+        enc = {k: v for k, v in enc.items() if k in ("input_ids", "attention_mask")}
         device = self.model.get_input_embeddings().weight.device
         enc = {k: v.to(device) for k, v in enc.items()}
 
