@@ -10,4 +10,6 @@ transformers>=4.51
 accelerate>=0.30
 numpy>=1.26
 openai>=1.40          # graders (Azure AD path is in Graders/; OpenAI-key fallback in rewriter/grader_transport.py)
+azure-identity>=1.17  # imported by Graders/graders at module load (even under GRADERS_AUTH=openai)
+pyyaml>=6             # Graders endpoint config
 safeflow-routing-probe @ git+https://github.com/goodfire-ai/safeflow-routing-probe.git@17ba733825f4bb84b53f06395cca34fb59ffbf20
