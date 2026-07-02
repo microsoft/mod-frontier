@@ -58,6 +58,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+if __package__ in (None, ""):  # invoked by path: python rewriter/eval_e2e.py
+    sys.path.insert(0, str(REPO_ROOT))
+
 #: Default arm suffix (probe intent + probe domain routing).
 DEFAULT_ARM = "rw_probe_probe"
 

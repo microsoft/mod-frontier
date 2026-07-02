@@ -35,6 +35,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
+from pathlib import Path
+
+if __package__ in (None, ""):  # invoked by path: python rewriter/pipeline.py
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rewriter import prompts as prompt_packs
 from rewriter.rewrite import QwenRewriter, RewriteRequest
