@@ -6,6 +6,7 @@ torch>=2.3
 transformers>=4.51
 accelerate>=0.30
 numpy>=1.26
+scikit-learn>=1.3     # rewriter/routing_probe metrics (vendored probe's own dependency)
 openai>=1.40          # graders (Azure AD path is in Graders/; OpenAI-key fallback in rewriter/grader_transport.py)
 azure-identity>=1.17  # imported by Graders/graders at module load (even under GRADERS_AUTH=openai)
 pyyaml>=6             # Graders endpoint config
