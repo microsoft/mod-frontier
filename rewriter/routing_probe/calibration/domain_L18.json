@@ -1,0 +1,47 @@
+{
+  "layer": 18,
+  "arch": "attn_pool",
+  "method": "per-head temperature + bias on one-vs-rest logits, fit by LBFGS minimizing multinomial NLL of the calibrated softmax",
+  "domains": [
+    "casual_interaction",
+    "creative_writing",
+    "information_seeking",
+    "other",
+    "practical_content",
+    "roleplay",
+    "task_assistance",
+    "translation_transcription"
+  ],
+  "temp": [
+    2.528091272918728,
+    2.1174739505683933,
+    1.3087098011899576,
+    2.39235815377538,
+    1.9488172041065543,
+    2.470263927522608,
+    2.665606751357001,
+    1.6230701499978082
+  ],
+  "bias": [
+    -0.6670318239215531,
+    0.2461124740184887,
+    1.1892094190263494,
+    -1.3047745896762377,
+    -0.1326336101244503,
+    0.2897643628251418,
+    -0.4339150207929185,
+    0.8132687886451714
+  ],
+  "provenance": {
+    "experiment": "SafeFlow issue-11",
+    "fit_on": "gpt-5-mini domain labels; calibration split of the issue-4 leakage-deduped holdout (2623 prompts)",
+    "eval_on": "disjoint test split (2787 prompts)",
+    "domain_macro_f1": {
+      "argmax": 0.8508,
+      "calibrated": 0.8721,
+      "delta": 0.021,
+      "ci95": [0.0056, 0.0367]
+    },
+    "caveat": "fit against gpt-5-mini proxy domain labels; the domain disagreements are not yet independently adjudicated"
+  }
+}

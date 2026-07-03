@@ -9,8 +9,8 @@ Pipeline (each stage reads/writes JSONL inside ``--out-dir``):
 
 1. ``harvest`` (GPU) — collect ready-made toxic responses from public datasets,
    keep the ones the ToxicChat T5 response filter flags, and route each prompt
-   to a REFUSE/REWRITE decision + content domain with the open-source
-   ``safeflow-routing-probe`` package.
+   to a REFUSE/REWRITE decision + content domain with the vendored routing
+   probe (``rewriter/routing_probe/``).
      * BeaverTails (``PKU-Alignment/BeaverTails``, split ``330k_train``):
        ``is_safe=False`` rows, one response per unique prompt.
      * RealToxicityPrompts (``allenai/real-toxicity-prompts``): shipped
@@ -377,7 +377,7 @@ def cmd_harvest(args: argparse.Namespace) -> None:
         torch.cuda.empty_cache()
 
     # 3) route flagged prompts -> probe domain + REFUSE/REWRITE decision
-    from safeflow_routing_probe import DEFAULT_THRESHOLD, ActivationExtractor, Router
+    from rewriter.routing_probe import DEFAULT_THRESHOLD, ActivationExtractor, Router
 
     assert abs(DEFAULT_THRESHOLD - REFUSE_THRESHOLD) < 1e-9, (DEFAULT_THRESHOLD, REFUSE_THRESHOLD)
     print("loading probe (ActivationExtractor + Router) ...", flush=True)

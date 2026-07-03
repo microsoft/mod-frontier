@@ -1,0 +1,95 @@
+{
+  "note": "numeric probe scores only (no prompt text); from real eval rows",
+  "domains": [
+    "casual_interaction",
+    "creative_writing",
+    "information_seeking",
+    "other",
+    "practical_content",
+    "roleplay",
+    "task_assistance",
+    "translation_transcription"
+  ],
+  "cases": [
+    {
+      "refuse": 5.2162240535835735e-06,
+      "domain": [
+        3.0712175203007064e-07,
+        4.534561412583571e-06,
+        0.9999016523361206,
+        0.00023036172206047922,
+        1.6542132925678743e-06,
+        2.2767465690520794e-09,
+        4.92656226924737e-06,
+        1.0913165624515386e-06
+      ],
+      "expected_domain": "information_seeking",
+      "decision_at_0161": "REWRITE",
+      "decision_at_0370": "REWRITE"
+    },
+    {
+      "refuse": 1.0,
+      "domain": [
+        2.9224102604530344e-07,
+        0.9858530759811401,
+        4.0546770385674336e-09,
+        0.00012898756540380418,
+        0.11965437233448029,
+        6.887341825329019e-12,
+        9.47212174651213e-06,
+        3.047095731290028e-08
+      ],
+      "expected_domain": "creative_writing",
+      "decision_at_0161": "REFUSE",
+      "decision_at_0370": "REFUSE"
+    },
+    {
+      "refuse": 0.20127461850643158,
+      "domain": [
+        0.00010686747555155307,
+        0.005017311777919531,
+        5.743614110542694e-06,
+        0.0007378436857834458,
+        0.00014705352077726275,
+        3.964009374612942e-05,
+        0.0022184511180967093,
+        0.9996589422225952
+      ],
+      "expected_domain": "translation_transcription",
+      "decision_at_0161": "REFUSE",
+      "decision_at_0370": "REWRITE"
+    },
+    {
+      "refuse": 0.2998189628124237,
+      "domain": [
+        3.1422476354237006e-07,
+        0.9990984201431274,
+        0.0010068691335618496,
+        0.35301661491394043,
+        7.350565169872425e-07,
+        1.114666119406138e-07,
+        1.755551784299314e-05,
+        2.1095722786412807e-06
+      ],
+      "expected_domain": "creative_writing",
+      "decision_at_0161": "REFUSE",
+      "decision_at_0370": "REWRITE"
+    },
+    {
+      "refuse": 0.49683037400245667,
+      "domain": [
+        9.929250154527836e-06,
+        0.005973451770842075,
+        0.0002468732127454132,
+        0.0002458223607391119,
+        0.9979742169380188,
+        2.5126168111455627e-05,
+        0.0072983307763934135,
+        4.898798124486348e-06
+      ],
+      "expected_domain": "practical_content",
+      "decision_at_0161": "REFUSE",
+      "decision_at_0370": "REFUSE"
+    }
+  ]
+}

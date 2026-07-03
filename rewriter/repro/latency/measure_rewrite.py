@@ -127,7 +127,7 @@ def main() -> None:
 
     # Probe routing stack, loaded once (as in production serving).
     import torch
-    from safeflow_routing_probe import ActivationExtractor, Router
+    from rewriter.routing_probe import ActivationExtractor, Router
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     t0 = time.perf_counter()

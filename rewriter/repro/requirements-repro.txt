@@ -28,6 +28,5 @@ anthropic>=0.40.0        # claude-opus-4-8 golden labels + harm veto
 azure-identity>=1.17.0   # Graders package auth (Azure AD)
 pyyaml>=6.0.0            # Graders endpoint config
 
-# REFUSE/REWRITE routing probe over frozen Qwen3-4B activations,
-# pinned to the commit used for the shipped prompt packs
-git+https://github.com/goodfire-ai/safeflow-routing-probe.git@17ba733825f4bb84b53f06395cca34fb59ffbf20
+# The REFUSE/REWRITE routing probe is vendored at rewriter/routing_probe/
+# (no external install needed).

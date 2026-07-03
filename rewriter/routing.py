@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """Probe-based routing: REFUSE/REWRITE decision + content domain per prompt.
 
-Wraps the open-source ``safeflow-routing-probe`` package
-(https://github.com/goodfire-ai/safeflow-routing-probe): a set of small
-attention-pooling probe heads over frozen ``Qwen/Qwen3-4B-Instruct-2507``
-layer-18 activations. One GPU forward pass per batch of prompts, no LLM
-call, deterministic given the pinned probe revision.
+Wraps the vendored routing probe (``rewriter/routing_probe/``, see its
+docstring for provenance): a set of small attention-pooling probe heads over
+frozen ``Qwen/Qwen3-4B-Instruct-2507`` layer-18 activations. One GPU forward
+pass per batch of prompts, no LLM call, deterministic.
 
-The refuse threshold (0.161) is the package's shipped operating point and the
+The refuse threshold (0.161) is the probe's shipped operating point and the
 one every end-to-end number in this directory was measured at. Domain routing
-uses the package's bundled per-domain calibration (present from the pinned
-revision onward -- the install pin in ``rewriter/requirements.txt`` matters).
+uses the bundled per-domain calibration in ``rewriter/routing_probe/calibration/``.
 
 Usage (standalone; also importable):
 
@@ -73,13 +71,13 @@ def route_prompts(
     one-vs-rest domain heads.
     """
     import torch
-    from safeflow_routing_probe import ActivationExtractor, DEFAULT_THRESHOLD, Router
+    from rewriter.routing_probe import ActivationExtractor, DEFAULT_THRESHOLD, Router
 
     if abs(DEFAULT_THRESHOLD - REFUSE_THRESHOLD) > 1e-9:
         raise RuntimeError(
-            f"safeflow-routing-probe DEFAULT_THRESHOLD ({DEFAULT_THRESHOLD}) does not "
-            f"match the validated operating point ({REFUSE_THRESHOLD}); check the "
-            "pinned package revision in rewriter/requirements.txt"
+            f"routing_probe DEFAULT_THRESHOLD ({DEFAULT_THRESHOLD}) does not "
+            f"match the validated operating point ({REFUSE_THRESHOLD}); the vendored "
+            "probe in rewriter/routing_probe/ has been modified"
         )
 
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -89,7 +87,7 @@ def route_prompts(
     if sorted(DOMAINS) != sorted(router.domains):
         raise RuntimeError(
             f"probe package domains {sorted(router.domains)} do not match the "
-            f"expected set {sorted(DOMAINS)}; check the pinned package revision"
+            f"expected set {sorted(DOMAINS)}; the vendored probe has been modified"
         )
 
     decisions = router.route(prompts, extractor, threshold=threshold, batch_size=batch_size)

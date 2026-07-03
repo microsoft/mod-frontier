@@ -22,12 +22,13 @@ pass-through rows the filter never flagged; the rewrite stage adds **zero**).
 
 ## How it works
 
-1. **Routing** — [`routing.py`](routing.py). The
-   [safeflow-routing-probe](https://github.com/goodfire-ai/safeflow-routing-probe)
-   package (attention-pooling probe heads over frozen Qwen3-4B layer-18
-   activations) maps each flagged prompt to a REFUSE/REWRITE decision
-   (threshold 0.161) and one of 8 content domains. Deterministic, one GPU
-   forward pass, no API call in the serving path.
+1. **Routing** — [`routing.py`](routing.py). The vendored routing probe
+   ([`routing_probe/`](routing_probe/): attention-pooling probe heads over
+   frozen Qwen3-4B layer-18 activations, trained heads and domain calibration
+   bundled, training code in [`routing_probe/train.py`](routing_probe/train.py))
+   maps each flagged prompt to a REFUSE/REWRITE decision (threshold 0.161)
+   and one of 8 content domains. Deterministic, one GPU forward pass, no API
+   call in the serving path.
 2. **Prompt selection** — [`prompts/`](prompts/). GEPA-optimized rewrite
    prompts (960 metric calls per scope, optimized *directly against the T5
    filter* with usefulness and harmlessness terms — see
@@ -67,8 +68,10 @@ pip install -r rewriter/requirements.txt
 ```
 
 Python ≥= 3.10, one GPU (~16 GB for the two Qwen3-4B loads; the probe and the
-rewriter share the backbone weights' HF cache). The pinned probe revision is
-the exact code the numbers above were measured with. Grading needs either
+rewriter share the backbone weights' HF cache). The routing probe is vendored
+at [`routing_probe/`](routing_probe/) — the exact code and weights the numbers
+above were measured with (see its module docstring for provenance). Grading
+needs either
 Azure AD auth (`az login`, per [`../Graders/README.md`](../Graders/README.md))
 or `GRADERS_AUTH=openai` + `OPENAI_API_KEY` (routes the same grader specs
 through api.openai.com — see [`grader_transport.py`](grader_transport.py)).
