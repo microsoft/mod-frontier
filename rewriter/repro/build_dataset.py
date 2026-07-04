@@ -84,6 +84,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+if __package__ in (None, ""):  # invoked by path: python rewriter/repro/build_dataset.py
+    sys.path.insert(0, str(REPO_ROOT))
+
 # ---- constants (kept identical to the original optimization run) -----------
 SEED = 42
 DOMAINS = [
@@ -154,9 +159,9 @@ def write_jsonl(path: str, rows: list[dict[str, Any]]) -> None:
     """Atomically write rows as JSONL (tmp file + rename)."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     tmp = path + ".tmp"
-    with open(tmp, "w") as f:
+    with open(tmp, "w", encoding="utf-8") as f:
         for r in rows:
-            f.write(json.dumps(r) + "\n")
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
     os.replace(tmp, path)
 
 
@@ -531,10 +536,16 @@ class GoldenCache:
 
 
 def label_one(client, row: dict, cache: GoldenCache, model: str) -> dict:
-    """Golden-label one row with claude-opus (cached; errors recorded, not raised)."""
+    """Golden-label one row with claude-opus.
+
+    Successful labels are cached (resumable); API errors are returned but
+    NEVER cached -- a transient overload must not permanently mark a row as
+    unlabeled, or a genuinely harmful row would silently stay in the rewrite
+    training pool on resume instead of being retried.
+    """
     key = row["id"]
     cached = cache.get(key)
-    if cached is not None:
+    if cached is not None and cached.get("golden_toxic") is not None:
         return cached
     try:
         msg = client.messages.create(
@@ -555,8 +566,9 @@ def label_one(client, row: dict, cache: GoldenCache, model: str) -> dict:
             "golden_rationale": str(parsed.get("rationale", ""))[:200],
         }
     except Exception as e:
-        res = {"golden_domain": None, "golden_toxic": None, "golden_severity": None,
-               "golden_rationale": f"ERR: {repr(e)[:120]}"}
+        # Do NOT cache the error record: the next run retries this row.
+        return {"golden_domain": None, "golden_toxic": None, "golden_severity": None,
+                "golden_rationale": f"ERR: {repr(e)[:120]}"}
     cache.set(key, res)
     return res
 
@@ -567,7 +579,9 @@ def cmd_label(args: argparse.Namespace) -> None:
 
     # 1) cap the pool (bounds labeling cost)
     pool = select_pool(rows, cap=args.cap, refuse_cap=args.refuse_cap, seed=args.seed)
-    pool_path = os.path.join(args.out_dir, F_POOL)
+    # --limit is a smoke flag: never clobber the full-run artifacts.
+    smoke_suffix = ".smoke" if args.limit else ""
+    pool_path = os.path.join(args.out_dir, F_POOL + smoke_suffix)
     write_jsonl(pool_path, pool)
     print(f"wrote {len(pool)} pool rows -> {pool_path}", flush=True)
 
@@ -621,9 +635,12 @@ def cmd_label(args: argparse.Namespace) -> None:
         )
     print("strata:", dict(Counter(r["stratum"] for r in rows)), flush=True)
 
-    out = os.path.join(args.out_dir, F_POOL_LABELED)
+    out = os.path.join(args.out_dir, F_POOL_LABELED + smoke_suffix)
     write_jsonl(out, rows)
     print(f"wrote {len(rows)} labeled rows -> {out}", flush=True)
+    if args.limit:
+        print(f"NOTE: --limit run — wrote *.smoke artifacts; the full-run "
+              f"{F_POOL} / {F_POOL_LABELED} are untouched", flush=True)
 
 
 # ---- stage 3: split ----------------------------------------------------------
@@ -636,6 +653,17 @@ def cmd_split(args: argparse.Namespace) -> None:
     # eval-set disjointness assertion (rows were marked at harvest, dropped at label)
     overlap = [r for r in rows if r.get("in_excluded_eval")]
     assert not overlap, f"{len(overlap)} rows overlap the excluded eval prompts — not disjoint!"
+
+    # Unresolved golden labels are a hard error: reliably_harmful() would
+    # silently treat golden_toxic=None as "not harmful" and leave genuinely
+    # harmful rows in the rewrite training pool. Re-run `label` (errored rows
+    # are retried; successes come from the cache).
+    unresolved = [r["id"] for r in rows if r.get("golden_toxic") is None]
+    if unresolved:
+        raise SystemExit(
+            f"{len(unresolved)} rows have unresolved golden labels "
+            f"(e.g. {unresolved[:5]}); re-run the label stage before split"
+        )
 
     # group-disjointness: one row per source_prompt_hash
     hcounts = Counter(r["source_prompt_hash"] for r in rows)

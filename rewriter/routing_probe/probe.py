@@ -134,7 +134,10 @@ def load_probe(path: str, d_model: int = D_MODEL, map_location: str = "cpu") -> 
     The checkpoint is ``torch.save({"arch", "head", "layer", "artifact": {"state_dict": ...}})``.
     Only ``arch == "attn_pool"`` checkpoints are supported.
     """
-    ckpt = torch.load(path, map_location=map_location, weights_only=False)
+    # weights_only=True: the checkpoint schema (strings/ints/dicts/tensors)
+    # is fully compatible, and it closes the arbitrary-code-execution pickle
+    # path for user-suppliable weights_dir/paths.
+    ckpt = torch.load(path, map_location=map_location, weights_only=True)
     arch = ckpt.get("arch")
     if arch not in ("attn_pool", None):
         raise ValueError(f"{path}: expected arch 'attn_pool', got {arch!r}")

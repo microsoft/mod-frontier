@@ -59,6 +59,7 @@ try:
     from rewriter.repro.gepa import harness as H
     from rewriter.repro.gepa import reward as R
 except ImportError:  # direct script execution
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # repo root
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import harness as H  # type: ignore
     import reward as R  # type: ignore

@@ -81,9 +81,18 @@ class ActivationExtractor:
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_id, torch_dtype=dtype, device_map={"": 0}, token=token
-        )
+        # Honor the device parameter: "cpu" loads without accelerate dispatch
+        # (fp32 -- bf16 matmuls are unsupported or very slow on most CPUs),
+        # and an explicit "cuda:N" places the backbone on that GPU rather
+        # than always GPU 0.
+        if str(device) == "cpu":
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_id, torch_dtype=torch.float32, token=token
+            )
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_id, torch_dtype=dtype, device_map={"": str(device)}, token=token
+            )
         self.model.eval()
         self.d_model = self.model.config.hidden_size
 

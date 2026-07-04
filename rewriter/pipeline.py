@@ -57,6 +57,33 @@ def flagged_indices(rows: list[dict], flag_field: str) -> list[int]:
     return [i for i, r in enumerate(rows) if str(r.get(flag_field)) == "1"]
 
 
+def load_routing_cache(path: str, expected_threshold: float) -> dict[str, dict]:
+    """Load a routing cache produced by ``rewriter/routing.py``, validating provenance.
+
+    Refuse decisions are threshold-dependent, and cache-missing rows are
+    routed live at ``expected_threshold`` — mixing decisions made at two
+    thresholds in one run must be impossible, so a cache without a
+    ``_meta.threshold`` record, or with a different threshold, is a hard error.
+    """
+    with open(path, encoding="utf-8") as f:
+        routing = json.load(f)
+    meta = routing.pop("_meta", None)
+    if meta is None:
+        raise SystemExit(
+            f"{path} has no _meta provenance record (produced by an older "
+            "rewriter/routing.py?) — regenerate it, or route live by omitting "
+            "--routing-cache"
+        )
+    cache_threshold = meta.get("threshold")
+    if cache_threshold is None or abs(float(cache_threshold) - expected_threshold) > 1e-9:
+        raise SystemExit(
+            f"{path} was produced at threshold {cache_threshold!r}, but this "
+            f"pipeline routes at {expected_threshold}; refusing to mix decisions "
+            "made at two thresholds"
+        )
+    return routing
+
+
 def select_prompt(decision: str, domain: str | None) -> tuple[str, str]:
     """Map a routing decision to ``(prompt_id, prompt_text)``."""
     if decision.strip().upper() == "REFUSE":
@@ -97,9 +124,11 @@ def main() -> None:
     # Routing: cache first, live for anything missing.
     routing: dict[str, dict] = {}
     if args.routing_cache and os.path.exists(args.routing_cache):
-        with open(args.routing_cache, encoding="utf-8") as f:
-            routing = json.load(f)
-        print(f"Loaded {len(routing)} cached routing decisions", flush=True)
+        from rewriter.routing import REFUSE_THRESHOLD
+
+        routing = load_routing_cache(args.routing_cache, REFUSE_THRESHOLD)
+        print(f"Loaded {len(routing)} cached routing decisions "
+              f"(threshold={REFUSE_THRESHOLD})", flush=True)
     missing = [i for i in idxs if str(i) not in routing]
     if missing:
         print(f"Routing {len(missing)} rows live", flush=True)

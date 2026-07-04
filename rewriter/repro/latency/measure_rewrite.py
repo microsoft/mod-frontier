@@ -201,15 +201,17 @@ def main() -> None:
 
     for k, i in enumerate(warmup_idx):
         r = run_one(i)
+        ttft_str = "n/a" if r["ttft_s"] is None else f"{r['ttft_s']:.3f}s"
         print(f"warm-up {k + 1}/{len(warmup_idx)}: e2e {r['e2e_s']:.2f}s "
-              f"(ttft {r['ttft_s']:.3f}s)", flush=True)
+              f"(ttft {ttft_str})", flush=True)
 
     records = []
     for k, i in enumerate(measure_idx):
         r = run_one(i)
         records.append(r)
+        ttft_str = "n/a" if r["ttft_s"] is None else f"{r['ttft_s']:.3f}s"
         print(f"measure {k + 1}/{n_measure}: idx={i} {r['decision']}/{r['domain']} "
-              f"route {r['route_s']:.3f}s ttft {r['ttft_s']:.3f}s gen {r['gen_s']:.2f}s "
+              f"route {r['route_s']:.3f}s ttft {ttft_str} gen {r['gen_s']:.2f}s "
               f"e2e {r['e2e_s']:.2f}s ({r['out_chars']} chars)", flush=True)
 
     gpu = torch.cuda.get_device_name(0) if device == "cuda" else "cpu"

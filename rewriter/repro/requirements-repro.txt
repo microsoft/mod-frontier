@@ -14,7 +14,7 @@ sentencepiece>=0.2.0
 datasets>=2.18.0
 
 # GEPA prompt optimization (dspy.teleprompt.GEPA + its backend)
-dspy>=3.0.0
+dspy>=3.1.0  # 3.0.0 lacks GEPA's gepa_kwargs (required for cloudpickle checkpoints)
 gepa>=0.0.27
 cloudpickle>=3.0.0
 numpy>=1.26

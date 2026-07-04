@@ -28,7 +28,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import asdict, dataclass
+from pathlib import Path
+
+if __package__ in (None, ""):  # invoked by path: python rewriter/routing.py
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 #: Refuse-probability threshold: route REFUSE iff P(refuse) >= this value.
 #: The validated operating point of the shipped probe heads.
@@ -124,6 +129,11 @@ def main() -> None:
     decisions = route_prompts(prompts, threshold=args.threshold, batch_size=args.batch_size)
 
     cache = {str(i): asdict(d) for i, d in zip(idxs, decisions)}
+    # Provenance: decisions are threshold-dependent, and a consumer mixing a
+    # cache made at one threshold with live routing at another would produce
+    # inconsistent REFUSE/REWRITE decisions. pipeline.py hard-errors when this
+    # record is missing or disagrees with its own threshold.
+    cache["_meta"] = {"threshold": args.threshold}
     dec_counts: dict[str, int] = {}
     dom_counts: dict[str, int] = {}
     for d in decisions:
@@ -134,7 +144,8 @@ def main() -> None:
         json.dump(cache, f, indent=2)
     print(f"Decision split: {dec_counts}", flush=True)
     print(f"Domain split: {json.dumps(dom_counts, indent=2)}", flush=True)
-    print(f"Wrote {len(cache)} routing decisions -> {args.output}", flush=True)
+    print(f"Wrote {len(decisions)} routing decisions (threshold={args.threshold}) "
+          f"-> {args.output}", flush=True)
 
 
 if __name__ == "__main__":
