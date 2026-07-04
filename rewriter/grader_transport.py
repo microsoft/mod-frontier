@@ -61,8 +61,15 @@ class OpenAIChatClient:
     ) -> str:
         model = self._deployment_override or model_alias
         call_kwargs: dict[str, Any] = dict(kwargs)
-        if not is_reasoning_model(model_alias) and temperature is not None:
+        # Guard on the EFFECTIVE model, not the alias: with GRADERS_DEPLOYMENT
+        # redirecting an alias to a reasoning model (o*/gpt-5*), temperature
+        # and max_tokens are rejected by the API.
+        if not is_reasoning_model(model) and temperature is not None:
             call_kwargs["temperature"] = temperature
+        if is_reasoning_model(model) and "max_tokens" in call_kwargs:
+            call_kwargs["max_completion_tokens"] = max(
+                int(call_kwargs.pop("max_tokens")), 2000
+            )
 
         delay = 1.0
         last_exc: Exception | None = None
@@ -95,7 +102,24 @@ def install() -> None:
 
     Import the ``graders`` package first (``rewriter.eval_e2e`` handles the
     path setup). Idempotent.
+
+    When ``GRADERS_DEPLOYMENT`` redirects every alias to one model, the
+    graders' disk cache — which keys results by the spec's model *alias* —
+    would silently serve override-produced labels to later runs without the
+    override (and vice versa). The cache key is therefore extended with the
+    effective deployment whenever an override is active.
     """
     from graders import core
 
     core.AzureChatClient = OpenAIChatClient  # type: ignore[attr-defined]
+
+    deployment = os.environ.get("GRADERS_DEPLOYMENT")
+    if deployment and not getattr(core, "_deployment_keyed_cache", None):
+        original_cache_key = core._cache_key
+
+        def _deployment_cache_key(model: str, prompt: str, sample: Any) -> str:
+            return original_cache_key(f"{model}@deployment={deployment}", prompt, sample)
+
+        core._cache_key = _deployment_cache_key  # type: ignore[attr-defined]
+        core._deployment_keyed_cache = deployment  # type: ignore[attr-defined]
+        print(f"Grader cache keys scoped to deployment override {deployment!r}", flush=True)

@@ -160,10 +160,29 @@ def _t5_model():
 # ---------------------------------------------------------------------------
 
 
+def require_arm_column(rewrites: list[dict], col: str, path: str) -> None:
+    """Hard-error when the arm's text column is absent from every record.
+
+    A wrong ``--arm`` would otherwise silently screen/grade empty strings,
+    which read as safe -- a fail-open path.
+    """
+    if rewrites and not any(col in r for r in rewrites):
+        raise SystemExit(
+            f"{path}: no record has the column {col!r} — wrong --arm? "
+            f"Columns present: {sorted(k for k in rewrites[0] if k.startswith('model_output'))}"
+        )
+
+
+def rewrite_ok(record: dict, col: str) -> bool:
+    """True iff the rewrite record is usable: successful and non-empty text."""
+    return bool(record.get("rw_success")) and bool(str(record.get(col) or "").strip())
+
+
 def cmd_t5_rewrites(args) -> None:
     """T5 re-screen of the rewrites -> ``{index: 0/1}``."""
     rewrites = load_rows(args.rewrites)
     col = f"model_output_{args.arm}"
+    require_arm_column(rewrites, col, args.rewrites)
     texts = [str(r.get(col, "") or "") for r in rewrites]
     run_t5, model, tok, device = _t5_model()
     preds = run_t5(texts, model, tok, device, batch_size=args.batch_size)
@@ -182,6 +201,50 @@ def cmd_t5_prompts(args) -> None:
     print(f"T5 positives on prompts: {sum(preds)}/{len(preds)} -> {args.output}", flush=True)
 
 
+def pair_prompts(data: list[dict], rewrites: list[dict], prompt_field: str) -> list[str]:
+    """Pair each rewrite record to its user prompt, by conv_id.
+
+    conv_id pairing survives a filtered or re-sorted data file; the recorded
+    positional index is only a fallback, and any conv_id disagreement is a
+    hard error — the graders must never silently score against the wrong
+    prompt (relevance would be garbage with no warning).
+    """
+    by_conv: dict = {}
+    dup_conv: set = set()
+    for j, row in enumerate(data):
+        c = row.get("conv_id")
+        if c in by_conv:
+            dup_conv.add(c)
+        elif c is not None:
+            by_conv[c] = j
+    prompts: list[str] = []
+    n_moved = 0
+    for r in rewrites:
+        c, idx = r.get("conv_id"), int(r["index"])
+        if c is not None and c in by_conv and c not in dup_conv:
+            j = by_conv[c]
+            if j != idx:
+                n_moved += 1
+            prompts.append(str(data[j][prompt_field]))
+        else:
+            if idx >= len(data):
+                raise SystemExit(
+                    f"rewrite index {idx} (conv_id {c!r}) not found in the data file: "
+                    "it does not match the file pipeline.py was run on"
+                )
+            if c is not None and data[idx].get("conv_id") != c:
+                raise SystemExit(
+                    f"conv_id mismatch at index {idx}: rewrites say {c!r}, "
+                    f"data file says {data[idx].get('conv_id')!r} — it does not "
+                    "match the file pipeline.py was run on"
+                )
+            prompts.append(str(data[idx][prompt_field]))
+    if n_moved:
+        print(f"conv_id pairing: {n_moved} rewrites matched at a different row "
+              f"position than recorded (re-sorted/filtered data file)", flush=True)
+    return prompts
+
+
 def cmd_grade(args) -> None:
     """toxicity_v10 + relevance_v01 over the rewrites -> grades JSONL."""
     import asyncio
@@ -190,8 +253,9 @@ def cmd_grade(args) -> None:
     data = load_rows(args.input)
     rewrites = load_rows(args.rewrites)
     col = f"model_output_{args.arm}"
+    require_arm_column(rewrites, col, args.rewrites)
     responses = [str(r.get(col, "") or "") for r in rewrites]
-    prompts = [str(data[r["index"]][args.prompt_field]) for r in rewrites]
+    prompts = pair_prompts(data, rewrites, args.prompt_field)
 
     async def run():
         tox_spec = core.load_spec("toxicity_v10")
@@ -214,7 +278,7 @@ def cmd_grade(args) -> None:
                 "conv_id": r.get("conv_id"),
                 "toxicity_label": t,
                 "relevance_score": rl,
-            }) + "\n")
+            }, ensure_ascii=False) + "\n")
     os.replace(tmp, args.output)
     pos = sum(1 for t in tox if t == 1)
     print(f"Toxicity positives {pos}/{len(tox)} "
@@ -258,33 +322,70 @@ def cmd_assemble(args) -> None:
     rel_col = f"relevance_score_{arm}"
     t5_col = f"T5_model_output_{arm}"
 
-    n_rw = 0
+    # A flagged row's rewrite must exist, be marked successful, be non-empty,
+    # and carry a parseable harm grade -- anything less FAILS CLOSED: the row
+    # keeps main's block (T5 flag = 1) instead of silently becoming a shown,
+    # "harmless" row. Missing grade records are a hard error, not a fill.
+    missing_grades = [i for i in sorted(flagged)
+                      if i in rewrites and rewrite_ok(rewrites[i], text_col)
+                      and i not in grades]
+    if missing_grades:
+        raise SystemExit(
+            f"{len(missing_grades)} successful rewrites have no grade record "
+            f"(e.g. indices {missing_grades[:5]}); run the grade stage over the "
+            "same rewrites file before assembling"
+        )
+
+    n_rw = n_failed = n_harm_unparsed = 0
     tmp = args.output + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         for i, row in enumerate(rows):
             out = dict(row)
+            # Strip this arm's columns before re-adding: a re-assemble over an
+            # already-assembled file must not leave stale text/grades behind
+            # (e.g. a rewrite that succeeded before but fails closed now).
+            for col in (text_col, harm_col, rel_col, t5_col):
+                out.pop(col, None)
             out["T5_user_input"] = int(t5_prompts.get(str(i), 0))
             gui = grader_prompts.get(str(i))
             out["grader_user_input"] = int(gui) if gui is not None else 0
-            if i in flagged and i in rewrites:
+            rw = rewrites.get(i)
+            if i in flagged and rw is not None and rewrite_ok(rw, text_col):
+                if rw.get("conv_id") is not None and rw.get("conv_id") != row.get("conv_id"):
+                    raise SystemExit(
+                        f"conv_id mismatch at index {i}: rewrites say "
+                        f"{rw.get('conv_id')!r}, input says {row.get('conv_id')!r}"
+                    )
                 n_rw += 1
-                g = grades.get(i, {})
+                g = grades[i]
                 harm = g.get("toxicity_label")
                 rel = g.get("relevance_score")
-                out[text_col] = rewrites[i].get(text_col)
-                # Conservative fills for grader failures: harm None -> 0,
-                # relevance None -> 1, missing T5 re-screen -> still blocked.
-                out[harm_col] = 0 if harm is None else int(harm)
+                out[text_col] = rw.get(text_col)
+                # Fail-closed fills: an unparsed harm grade counts as HARMFUL
+                # (never 0 -- 0 is the favorable fill, not the conservative
+                # one); unparsed relevance -> 1 (not useful); missing T5
+                # re-screen -> still blocked.
+                if harm is None:
+                    n_harm_unparsed += 1
+                out[harm_col] = 1 if harm is None else int(harm)
                 out[rel_col] = 1 if rel is None else int(rel)
                 out[t5_col] = int(t5_rw.get(str(i), 1))
             else:
-                # Pass-through: the system shows the original response.
+                if i in flagged and rw is not None:
+                    n_failed += 1  # failed/empty rewrite: keep main's block
+                # Pass-through: the system shows (or blocks) the original response.
                 out[harm_col] = as_int(row.get("grader_model_output_gpt5"), 0)
                 raw_rel = row.get("relevance_score_gpt5")
                 out[rel_col] = None if raw_rel is None else as_int(raw_rel, None)
                 out[t5_col] = as_int(row.get("T5_model_output_gpt5"), 0)
             f.write(json.dumps(out, ensure_ascii=False) + "\n")
     os.replace(tmp, args.output)
+    if n_failed:
+        print(f"WARNING: {n_failed} flagged rows had failed/empty rewrites — "
+              "they keep the original block (fail closed)", flush=True)
+    if n_harm_unparsed:
+        print(f"WARNING: {n_harm_unparsed} rewrites had unparsed harm grades — "
+              "counted as harmful (fail closed)", flush=True)
     print(f"Assembled {len(rows)} rows ({n_rw} rewritten) -> {args.output}", flush=True)
 
 
@@ -347,22 +448,32 @@ def cmd_metrics(args) -> None:
         for sc, fn in scenarios.items():
             for split_name, split_rows in (("full", crows), ("flagged", frows)):
                 m = compute_metrics(split_rows, blocked_fn=fn)
-                if args.n_boot:
+                if args.n_boot and m:  # skip CI attachment on an empty subset
                     ci = _bootstrap_cis(split_rows, fn, compute_metrics, n_boot=args.n_boot)
                     for k in RATE_KEYS:
                         m[f"{k}_ci"] = ci[k]
                 entry[split_name][sc] = m
         result["arms"][name] = entry
+
+    # Write results BEFORE any summary printing: a print-time surprise must
+    # not lose a (potentially 2000-resample) bootstrap run.
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+    print(f"Wrote metrics -> {args.output}", flush=True)
+
+    if not flagged_idx:
+        print(f"NOTE: no rows matched --flag-field {args.flag_field!r}; "
+              "flagged tables are empty", flush=True)
+    for name, entry in result["arms"].items():
         f_resp = entry["flagged"]["response"]
+        if "block_rate" not in f_resp:  # compute_metrics returns {} for zero rows
+            print(f"[{name}] flagged/response: (empty subset)", flush=True)
+            continue
         print(f"[{name}] flagged/response: block={f_resp['block_rate']:.4f} "
               f"({f_resp['blocked']}/{f_resp['total']}) "
               f"harmful_shown={f_resp['harmful_in_shown']}/{f_resp['shown']} "
               f"useful={f_resp['usefulness_rate']:.4f} ({f_resp['useful']}/{f_resp['total']})",
               flush=True)
-
-    with open(args.output, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2)
-    print(f"Wrote metrics -> {args.output}", flush=True)
 
 
 # ---------------------------------------------------------------------------

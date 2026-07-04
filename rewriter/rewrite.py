@@ -113,8 +113,11 @@ _BARE_EXACT = {
 #: Refusal openers across the languages the rewrite stage was evaluated on.
 #: Compound forms are used where a bare opener would match benign sentences.
 _BARE_REFUSAL_OPENERS = (
-    # English
-    "i'm sorry", "i cannot", "i can't", "sorry,", "i apologize", "i'm unable",
+    # English. "sorry," ships only in compound form: a bare "sorry," opener
+    # false-positives on short benign rewrites ("Sorry, everyone deserves
+    # respect.") and the retry would replace a good rewrite with a refusal.
+    "i'm sorry", "i cannot", "i can't", "sorry, but", "sorry, i",
+    "i apologize", "i'm unable",
     "i'm not able to help", "i'm not able to assist", "i must decline",
     "i refuse to help", "i refuse to assist", "i refuse to provide",
     "i won't help", "i won't assist", "i won't provide",
@@ -236,15 +239,15 @@ def build_refusal_retry_messages(
 
 
 def clean_completion(completion: str) -> str:
-    """Strip role-marker artifacts and boilerplate prefixes from a completion."""
-    if "\nassistant\n" in completion:
-        completion = completion.split("\nassistant\n")[-1].strip()
-    elif completion.startswith("assistant\n"):
-        completion = completion[len("assistant\n"):].strip()
-    elif "\nmodel\n" in completion:
-        completion = completion.split("\nmodel\n")[-1].strip()
-    elif completion.startswith("model\n"):
-        completion = completion[len("model\n"):].strip()
+    """Strip boilerplate prefixes from a completion.
+
+    Note: this deliberately does NOT search for role markers like
+    ``"\\nassistant\\n"`` inside the text -- with the correct decode slice
+    (generated tokens only) there is no prompt echo to rescue, and a
+    marker-split would silently discard everything before a role-marker
+    string that legitimately appears in a rewrite (e.g. when rewriting
+    content that quotes a chat transcript).
+    """
     for prefix in ("Rewritten response:", "Rewritten:", "Assistant response:"):
         if completion.lower().startswith(prefix.lower()):
             completion = completion[len(prefix):].lstrip()
@@ -345,16 +348,14 @@ class QwenRewriter:
             )
         wall = time.time() - t0
 
-        input_ids = enc["input_ids"]
-        attn = enc.get("attention_mask")
-        if attn is not None:
-            true_lengths = [int(n.item()) for n in attn.sum(dim=1)]
-        else:
-            true_lengths = [int(input_ids.shape[1])] * input_ids.shape[0]
+        # With left padding, generated tokens start at the PADDED input length
+        # for every row -- never at the row's true (unpadded) length, which
+        # would leak the prompt tail into the decoded completion.
+        input_len = enc["input_ids"].shape[1]
 
         completions = []
-        for i in range(input_ids.shape[0]):
-            new_tokens = sequences[i][true_lengths[i]:]
+        for i in range(enc["input_ids"].shape[0]):
+            new_tokens = sequences[i][input_len:]
             text = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
             completions.append(clean_completion(text))
         return completions, wall

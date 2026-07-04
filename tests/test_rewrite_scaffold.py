@@ -86,9 +86,12 @@ class TestBareRefusalDetector:
 
 
 class TestCleanCompletion:
-    def test_assistant_marker_split_takes_last(self):
-        assert clean_completion("echoed prompt\nassistant\nthe actual rewrite") == \
-            "the actual rewrite"
+    def test_role_marker_content_preserved(self):
+        # With the corrected decode slice there is no prompt echo to rescue;
+        # a rewrite that legitimately contains a role-marker string must
+        # survive intact (review finding #1).
+        text = "safe transcript rewrite:\nassistant\nplease be kind"
+        assert clean_completion(text) == text
 
     def test_prefix_strip(self):
         assert clean_completion("Rewritten response: safe text") == "safe text"
