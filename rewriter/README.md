@@ -155,7 +155,18 @@ Everything upstream of the shipped prompt packs lives in [`repro/`](repro/)
 
 Regenerated rewrites are not fully byte-identical (GPU batching
 nondeterminism even at temperature 0), so reproduction targets the metric
-level. On a fixed 30-row sample, a regeneration through this package matched
-the committed run exactly: identical routing on 30/30 rows, identical T5-pass
-(25/30, same rows), identical harmlessness (29/30, same row, blocked in
-both), 23/30 rewrites byte-identical.
+level. On a fixed 30-row sample, a regeneration through this package matches
+the committed run on routing (30/30 decisions and domains) and keeps
+byte-identity around 24/30; roughly six long `REWRITE` rows differ by a few
+characters each run.
+
+**Pass criterion:** routing identical **and** no *new* blocked rows (a
+rewrite that was shown must not become blocked) **and** byte-identity not
+lower than the reference — rather than exact blocked-set equality. Exact
+blocked-set equality is not a stable target: **index 221 sits on the T5
+decision boundary**, and its (nondeterministic) rewrite flips
+blocked/unblocked run-to-run — observed flipping in both the vendored-probe
+gate and the review-fix gate, independent of code version. The row's rewrite
+is coherent and complete in every run; only whether that particular wording
+trips the T5 filter changes. Treat a 221-only blocked-set difference as
+GPU-nondeterminism noise, not a regression.
