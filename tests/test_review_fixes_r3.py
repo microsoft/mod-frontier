@@ -413,3 +413,34 @@ class TestGoldenCacheModelKey:
         label_one(a, dict(row), cache, "model-a")
         label_one(a, dict(row), cache, "model-a")
         assert a.calls == 1  # second call served from the cache
+
+
+# ---------------------------------------------------------------------------
+# 5: the grader disk cache must not be shared across transports
+# ---------------------------------------------------------------------------
+
+
+class TestTransportScopedGraderCache:
+    def test_openai_transport_scopes_cache_key(self, monkeypatch):
+        import sys as _sys
+
+        _sys.path.insert(0, str(REPO / "Graders"))
+        graders_core = pytest.importorskip("graders.core")
+        import rewriter.grader_transport as gt
+
+        monkeypatch.setenv("OPENAI_API_KEY", "test")
+        monkeypatch.delenv("GRADERS_DEPLOYMENT", raising=False)
+        stock = getattr(graders_core, "_unscoped_cache_key", None) or graders_core._cache_key
+        azure_key = stock("gpt-4.1", "tmpl", "sample")
+
+        gt.install()  # no deployment override: transport alone must scope
+        openai_key = graders_core._cache_key("gpt-4.1", "tmpl", "sample")
+        assert openai_key != azure_key
+
+        monkeypatch.setenv("GRADERS_DEPLOYMENT", "gpt-4o-mini")
+        gt.install()  # deployment override scopes further, within the transport
+        overridden_key = graders_core._cache_key("gpt-4.1", "tmpl", "sample")
+        assert overridden_key not in (azure_key, openai_key)
+
+        gt.install()  # repeated install: stable, no wrapper stacking
+        assert graders_core._cache_key("gpt-4.1", "tmpl", "sample") == overridden_key

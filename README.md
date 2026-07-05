@@ -49,11 +49,16 @@ The published deliverable is committed:
   | `relevance_score_gpt5` | LLM-judge relevance score (1–3) |
   | `T5_model_output_gpt5` | ToxicChat T5 toxicity prediction of the response (0/1) |
 
-The file also carries the rewrite-stage columns (`*_rw_probe_probe`: the
-rewrite of each T5-flagged response plus its grades and T5 re-screen, with
-pass-through semantics on unflagged rows) and the prompt-level fields
-`T5_user_input` / `grader_user_input` used by the prompt-filter scenarios and
-the FP rate — see [`rewriter/README.md`](rewriter/README.md#data-columns-added-to-datatoxicchat_with_gpt5responsejsonl).
+The file also carries the rewrite-stage columns (`*_rw_probe_probe`) and the
+prompt-level fields `T5_user_input` / `grader_user_input` used by the
+prompt-filter scenarios and the FP rate. The rewrite *text* column
+(`model_output_rw_probe_probe`) exists **only on the 230 T5-flagged rows**
+that were rewritten — unflagged rows omit the key entirely, so read it with
+`row.get(...)`, not `row[...]`. The grade and re-screen columns
+(`grader_model_output_rw_probe_probe`, `relevance_score_rw_probe_probe`,
+`T5_model_output_rw_probe_probe`) are present on every row, with pass-through
+semantics on unflagged rows (they carry the original response's values) — see
+[`rewriter/README.md`](rewriter/README.md#data-columns-added-to-datatoxicchat_with_gpt5responsejsonl).
 
 Large intermediate working files and the runtime grader cache are regenerable
 and are excluded via `.gitignore`.

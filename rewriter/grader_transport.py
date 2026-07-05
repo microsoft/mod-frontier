@@ -113,23 +113,32 @@ def install() -> None:
     Import the ``graders`` package first (``rewriter.eval_e2e`` handles the
     path setup). Idempotent.
 
-    When ``GRADERS_DEPLOYMENT`` redirects every alias to one model, the
-    graders' disk cache — which keys results by the spec's model *alias* —
-    would silently serve override-produced labels to later runs without the
-    override (and vice versa). The cache key is therefore extended with the
-    effective deployment whenever an override is active.
+    The graders' disk cache keys results by the spec's model *alias* only, so
+    installing this transport scopes the cache key twice over:
+
+    * ``transport=openai`` always — an Azure deployment and the same-named
+      api.openai.com model can resolve to different snapshots, so labels
+      produced through one transport must never be served to the other
+      (stock Azure runs never call :func:`install` and keep the stock keys).
+    * ``deployment=...`` additionally when ``GRADERS_DEPLOYMENT`` redirects
+      every alias to one model, for the same reason within this transport.
     """
     from graders import core
 
     core.AzureChatClient = OpenAIChatClient  # type: ignore[attr-defined]
 
+    scope = "transport=openai"
     deployment = os.environ.get("GRADERS_DEPLOYMENT")
-    if deployment and not getattr(core, "_deployment_keyed_cache", None):
-        original_cache_key = core._cache_key
+    if deployment:
+        scope += f"@deployment={deployment}"
 
-        def _deployment_cache_key(model: str, prompt: str, sample: Any) -> str:
-            return original_cache_key(f"{model}@deployment={deployment}", prompt, sample)
+    # Always rewrap from the stock key function: repeated install() calls
+    # (or a changed GRADERS_DEPLOYMENT) must re-derive, never stack wrappers.
+    original_cache_key = getattr(core, "_unscoped_cache_key", None) or core._cache_key
+    core._unscoped_cache_key = original_cache_key  # type: ignore[attr-defined]
 
-        core._cache_key = _deployment_cache_key  # type: ignore[attr-defined]
-        core._deployment_keyed_cache = deployment  # type: ignore[attr-defined]
-        print(f"Grader cache keys scoped to deployment override {deployment!r}", flush=True)
+    def _scoped_cache_key(model: str, prompt: str, sample: Any) -> str:
+        return original_cache_key(f"{model}@{scope}", prompt, sample)
+
+    core._cache_key = _scoped_cache_key  # type: ignore[attr-defined]
+    print(f"Grader cache keys scoped to {scope!r}", flush=True)
