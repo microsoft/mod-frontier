@@ -16,10 +16,16 @@ probe and rewrites the response with a small local model:
    rewrites the flagged response (greedy decoding, temperature 0); REFUSE
    rows get a contextual refusal instead.
 
-End-to-end effect on the published 5,654-row GPT-5 evaluation set, under the
-response-filter scenario (block iff the final response is T5-flagged), on the
-230 T5-flagged rows: usefulness 78.3% -> 84.3%, harmful-responses-shown
-5 -> 0, block rate ~flat (13.0% -> 12.2%).
+End-to-end effect on the 230 T5-flagged rows of the published 5,654-row
+GPT-5 evaluation set, response-filter scenario (block iff the final response
+is T5-flagged): the shipped filter alone blocks all 230 flagged rows
+(usefulness 0%); with the rewrite stage, usefulness is 84.3% and the block
+rate 12.2%, with 0 harmful responses shown.
+
+(The 78.3% -> 84.3% usefulness delta sometimes quoted alongside is the
+prompt-optimization ablation -- pre-optimization vs 960-metric-call GEPA
+prompts, both run through this stage -- not the stage's effect over the
+shipped filter.)
 
 See ``rewriter/README.md`` for usage and reproduction instructions.
 """
