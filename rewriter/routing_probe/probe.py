@@ -1,9 +1,9 @@
 """The attention-pooling routing probe head.
 
 ``AttnPoolProbe`` is a single-query learned-attention-pooling head over a frozen
-transformer's residual stream. It is the architecture selected by SafeFlow
-experiment #4 from a 12-architecture x 5-layer sweep, applied to the residual
-stream at layer 18 of ``Qwen/Qwen3-4B-Instruct-2507``.
+transformer's residual stream. It is the architecture selected from a
+12-architecture x 5-layer sweep during SafeFlow probe development, applied to
+the residual stream at layer 18 of ``Qwen/Qwen3-4B-Instruct-2507``.
 
 Architecture (one shared design serves every routing head):
 
@@ -19,11 +19,11 @@ head (REFUSE vs REWRITE) and eight one-vs-rest domain heads all use this same
 class with different trained weights.
 
 Note on provenance: this is the *single-query* pooling head. An 8-head
-multi-head variant was evaluated in experiment #4 and lost (macro-F1 0.907 vs
+multi-head variant was evaluated in the same sweep and lost (macro-F1 0.907 vs
 0.929), so it is intentionally not the shipped architecture. The saved
 state_dict keys are exactly ``query``, ``norm.weight``, ``norm.bias``,
 ``head.weight``, ``head.bias`` and are preserved here for load compatibility
-with the experiment-#4 weights shipped in ``weights/``.
+with the trained weights shipped in ``weights/``.
 """
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ class AttnPoolProbe(nn.Module):
         return out
 
 
-# Backwards-compatible alias for the experiment-#4 class name.
+# Backwards-compatible alias for the original upstream class name.
 AttnPool = AttnPoolProbe
 
 
@@ -129,7 +129,7 @@ def iter_packed_batches(
 
 
 def load_probe(path: str, d_model: int = D_MODEL, map_location: str = "cpu") -> AttnPoolProbe:
-    """Load an ``AttnPoolProbe`` from an experiment-#4 ``.pt`` checkpoint.
+    """Load an ``AttnPoolProbe`` from a shipped-layout ``.pt`` checkpoint.
 
     The checkpoint is ``torch.save({"arch", "head", "layer", "artifact": {"state_dict": ...}})``.
     Only ``arch == "attn_pool"`` checkpoints are supported.
@@ -155,7 +155,7 @@ def save_probe(
     layer: int = 18,
     metrics: dict | None = None,
 ) -> None:
-    """Save an ``AttnPoolProbe`` in the experiment-#4 checkpoint layout."""
+    """Save an ``AttnPoolProbe`` in the shipped checkpoint layout."""
     state = {k: v.cpu() for k, v in model.state_dict().items()}
     torch.save(
         {"arch": "attn_pool", "head": head, "layer": layer,

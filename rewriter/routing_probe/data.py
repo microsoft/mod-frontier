@@ -6,8 +6,8 @@ The SafeFlow routing datasets are JSONL with (at least) these fields per row:
     decision             : str   "REFUSE" or "REWRITE" (refusal-head label)
     domain               : str   one of DOMAINS (domain-head label)
 
-Leakage discipline (must match experiment #4 exactly, or reported metrics are
-invalid): the held-out eval split is deduplicated against train by *normalized
+Leakage discipline (must match the probe-training protocol exactly, or
+reported metrics are invalid): the held-out eval split is deduplicated against train by *normalized
 prompt* (lowercase + whitespace-collapse), dropping any eval row whose
 normalized prompt also appears in train. Seed is fixed at 42 throughout.
 """

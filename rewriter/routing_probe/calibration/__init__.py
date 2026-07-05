@@ -2,7 +2,7 @@
 
 The eight domain heads are independent one-vs-rest probes; the raw routing
 decision is ``argmax`` over their eight positive-class probabilities. SafeFlow
-experiment #11 found that a per-head temperature + bias transform of each head's
+A held-out calibration study found that a per-head temperature + bias transform of each head's
 logit -- fit jointly to maximize the calibrated softmax likelihood against
 gpt-5-mini domain labels -- re-ranks the heads enough to raise domain macro-F1
 from 0.8508 (raw argmax) to 0.8721 (+0.021, 95% CI [0.0056, 0.0367]) on a

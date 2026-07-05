@@ -1,21 +1,21 @@
 """Calibrated routing: probe scores -> domain + REFUSE/REWRITE decision.
 
-This is the routing layer validated end-to-end on real MBO traffic in SafeFlow
-experiment #5. Given the nine attention-pooling heads (one refusal + eight
-one-vs-rest domain), routing a prompt is:
+This is the routing layer validated end-to-end on real production traffic
+during SafeFlow development. Given the nine attention-pooling heads (one
+refusal + eight one-vs-rest domain), routing a prompt is:
 
     domain   = argmax over the (optionally calibrated) 8 domain head scores
     decision = REFUSE if refuse_prob >= threshold else REWRITE
 
 The refusal threshold has two documented operating points:
 
-    DEFAULT_THRESHOLD  = 0.161   recall-favoring, the experiment-#5 default
+    DEFAULT_THRESHOLD  = 0.161   recall-favoring, the validated default
     F1_OPTIMAL_THRESHOLD = 0.370 F1-optimal alternate (in-distribution)
 
 Domain calibration. By default the domain argmax is taken over a per-head
 temperature + bias calibration of the eight one-vs-rest logits
-(:data:`~rewriter.routing_probe.calibration.DEFAULT_DOMAIN_CALIBRATION`, fit in
-SafeFlow experiment #11), which raises held-out domain macro-F1 from 0.8508 to
+(:data:`~rewriter.routing_probe.calibration.DEFAULT_DOMAIN_CALIBRATION`, fit on
+a held-out split during probe development), which raises held-out domain macro-F1 from 0.8508 to
 0.8721. Pass ``domain_calibration=None`` to recover the original raw-argmax
 behavior. The refusal threshold is unaffected -- calibration only re-ranks the
 domain heads.
@@ -76,7 +76,7 @@ def route_scores(
         threshold: refusal operating point; REFUSE iff ``refuse >= threshold``.
         domains: domain names, indexing ``scores.domain`` columns.
         domain_calibration: per-head temperature + bias applied to the domain
-            logits before the argmax. Defaults to the shipped experiment-#11
+            logits before the argmax. Defaults to the shipped calibration
             vector (:data:`~rewriter.routing_probe.calibration.DEFAULT_DOMAIN_CALIBRATION`);
             pass ``None`` for the original raw-argmax behavior. When calibrated,
             ``domain_confidence`` is the winning head's calibrated marginal;
@@ -171,7 +171,7 @@ class Router:
         """End-to-end: prompts -> activations -> probe scores -> decisions.
 
         ``domain_calibration`` is forwarded to :func:`route_scores` (defaults to
-        the shipped experiment-#11 vector; pass ``None`` for raw argmax).
+        the shipped calibration vector; pass ``None`` for raw argmax).
         """
         scores = self.score_prompts(prompts, extractor, batch_size=batch_size)
         return route_scores(scores, threshold=threshold, domains=self.domains,

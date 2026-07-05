@@ -4,11 +4,11 @@ Captures the residual stream at a transformer block of a frozen causal LM, with
 the SafeFlow hybrid tokenization recipe. The backbone is loaded in bf16 and
 never trained.
 
-Layer convention (per experiment #4): ``block`` is a 0-indexed transformer
+Layer convention: ``block`` is a 0-indexed transformer
 block. Its residual-stream output is HF
 ``output_hidden_states[block + HS_OFFSET]`` with ``HS_OFFSET = 1`` (because
 ``hidden_states[0]`` is the embedding output). So block 18 -> ``hidden_states[19]``.
-Verified in experiment #4 that block 18's residual output matches
+Verified during probe development that block 18's residual output matches
 ``model.layers.18`` (mean cosine > 0.999).
 
 Hybrid tokenization: each prompt is truncated to ``MAX_SEQ_LEN`` tokens; if the
@@ -34,7 +34,7 @@ import torch
 # block residual output = hidden_states[block + HS_OFFSET]
 HS_OFFSET = 1
 
-# Tokenization recipe (per experiment #4)
+# Tokenization recipe (fixed at probe-training time; must match the heads)
 MAX_SEQ_LEN = 650
 FIRST_N = 512
 LAST_N = 128

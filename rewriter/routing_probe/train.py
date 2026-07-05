@@ -3,7 +3,8 @@
 Trains the single-query ``AttnPoolProbe`` head on packed per-token activations
 (the backbone is frozen; only the head is trained). One refusal head plus eight
 one-vs-rest domain heads, all the same architecture. Class-balanced
-cross-entropy, AdamW, seed 42. This reproduces experiment #4's ``train_attn_pool``.
+cross-entropy, AdamW, seed 42. This is the training recipe that produced the
+shipped heads in ``weights/``.
 """
 from __future__ import annotations
 

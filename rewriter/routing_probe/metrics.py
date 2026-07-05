@@ -1,6 +1,7 @@
 """Classification metrics for routing heads.
 
-``compute_metrics`` is the per-head binary metric (matches experiment #4). The
+``compute_metrics`` is the per-head binary metric (matches the probe-training
+evaluation). The
 headline domain metric is the macro-average of the per-OvR-head ``macro_f1`` /
 ``balanced_acc`` across the eight domains (see ``aggregate_domain_metrics``).
 """
