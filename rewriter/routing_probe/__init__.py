@@ -1,4 +1,4 @@
-"""Attention-pooling routing probe for Qwen3-4B (vendored).
+"""Attention-pooling routing probe for Qwen3-4B.
 
 A fully open routing probe: a single-query learned-attention-pooling head
 over the frozen residual stream at layer 18 of
@@ -7,11 +7,11 @@ eight one-vs-rest domain heads share the architecture; the backbone is never
 trained. The 9 trained heads (~0.5 MB total) and the domain calibration ship
 in this directory, so routing needs no external download beyond the backbone.
 
-Provenance: vendored from ``goodfire-ai/safeflow-routing-probe`` @
-``17ba733825f4bb84b53f06395cca34fb59ffbf20`` with the owner's authorization;
-the upstream repository is to be retired after this integration, making this
-directory the release location for the trained weights, training code
-(:mod:`.train`), and evaluation utilities. Contributed under this
+Provenance: original work, first developed internally at Goodfire and
+released here as its canonical location — this directory carries the trained
+weights, training code (:mod:`.train`), and evaluation utilities. The probe
+is not derived from an external paper or third-party implementation, and
+this repository has no external probe dependency. Contributed under this
 repository's license via the CLA.
 
 Quickstart (inference):
