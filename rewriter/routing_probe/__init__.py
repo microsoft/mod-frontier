@@ -7,12 +7,14 @@ eight one-vs-rest domain heads share the architecture; the backbone is never
 trained. The 9 trained heads (~0.5 MB total) and the domain calibration ship
 in this directory, so routing needs no external download beyond the backbone.
 
-Provenance: original work, first developed internally at Goodfire and
-released here as its canonical location — this directory carries the trained
-weights, training code (:mod:`.train`), and evaluation utilities. The probe
-is not derived from an external paper or third-party implementation, and
-this repository has no external probe dependency. Contributed under this
-repository's license via the CLA.
+Provenance: an original implementation, first developed internally at
+Goodfire and released here as its canonical location — this directory
+carries the trained weights, training code (:mod:`.train`), and evaluation
+utilities, with no third-party probe code and no external probe dependency.
+The approach itself (a single-query attention-pooling head trained on frozen
+model activations) follows standard probing practice; see the ModFrontier
+paper for method references. Contributed under this repository's license
+via the CLA.
 
 Quickstart (inference):
     from rewriter.routing_probe import ActivationExtractor, Router
