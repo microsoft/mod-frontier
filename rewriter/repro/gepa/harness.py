@@ -58,17 +58,25 @@ def seed_everything(seed: int) -> None:
 
 
 def load_jsonl(path: str) -> list[dict[str, Any]]:
-    """Read a JSONL file into a list of dicts (blank/broken lines skipped)."""
+    """Read a JSONL file into a list of dicts (blank lines skipped).
+
+    A corrupt or truncated line is a hard error, not a silent drop: GEPA
+    would otherwise optimize and report val scores over a smaller train/val
+    split than ``result.json`` claims.
+    """
     rows: list[dict[str, Any]] = []
     with Path(path).open() as f:
-        for line in f:
+        for ln, line in enumerate(f, 1):
             line = line.strip()
             if not line:
                 continue
             try:
                 rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"{path}:{ln}: corrupt JSONL line ({e}) — refusing to "
+                    "silently drop dataset rows; fix or regenerate the file"
+                ) from e
     return rows
 
 

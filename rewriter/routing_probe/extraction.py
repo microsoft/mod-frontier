@@ -134,6 +134,18 @@ class ActivationExtractor:
 
         enc = tok(prompts, truncation=True, max_length=MAX_SEQ_LEN, padding=False)
         ids_all = enc["input_ids"]
+        # Guard zero-token prompts up front (Qwen's tokenizer returns [] for
+        # "", no BOS): an empty sequence would IndexError on last-token
+        # pooling part-way through a long GPU run. Error immediately, with
+        # the offending positions named, before any forward pass.
+        empty = [i for i in range(n) if len(ids_all[i]) == 0]
+        if empty:
+            raise ValueError(
+                f"{len(empty)} prompt(s) tokenize to zero tokens "
+                f"(e.g. positions {empty[:5]}) — the probe cannot route an "
+                "empty prompt; filter these rows or fix the prompt field "
+                "before extraction"
+            )
         order = sorted(range(n), key=lambda i: len(ids_all[i]))
 
         per_layer_tokens = {b: [None] * n for b in layers}

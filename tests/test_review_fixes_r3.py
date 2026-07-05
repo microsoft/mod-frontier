@@ -307,6 +307,86 @@ class _FakeAnthropic:
         return _M()
 
 
+# ---------------------------------------------------------------------------
+# 7: zero-token prompts must be a named error up front, not an IndexError
+#    part-way through a GPU extraction run
+# ---------------------------------------------------------------------------
+
+
+class TestEmptyPromptGuard:
+    def _extractor_stub(self):
+        import torch.nn as nn
+        from types import SimpleNamespace
+
+        from rewriter.routing_probe.extraction import ActivationExtractor
+
+        ex = ActivationExtractor.__new__(ActivationExtractor)  # no 4B model load
+        model = nn.Linear(2, 2)  # supplies .parameters() for input_device
+        model.config = SimpleNamespace(hidden_size=8)
+        ex.model = model
+
+        class FakeTok:
+            pad_token_id = 0
+
+            def __call__(self, prompts, **kw):
+                # Qwen behavior: "" tokenizes to [] (no BOS)
+                return {"input_ids": [[1, 2] if p else [] for p in prompts]}
+
+        ex.tokenizer = FakeTok()
+        return ex
+
+    def test_empty_prompt_is_named_error_before_forward(self):
+        ex = self._extractor_stub()
+        with pytest.raises(ValueError, match="zero tokens"):
+            ex.extract_layers(["a fine prompt", "", "another"], layers=[0],
+                              progress=False)
+
+
+# ---------------------------------------------------------------------------
+# 12: is_reasoning_model matches explicit families, not any name starting "o"
+# ---------------------------------------------------------------------------
+
+
+class TestReasoningModelPrefixes:
+    def test_reasoning_families_match(self):
+        from rewriter.grader_transport import is_reasoning_model
+
+        for m in ("o1", "o1-preview", "o3", "o3-mini", "o4-mini",
+                  "gpt-5", "gpt-5-mini", "O3-MINI"):
+            assert is_reasoning_model(m), m
+
+    def test_non_reasoning_o_names_do_not_match(self):
+        from rewriter.grader_transport import is_reasoning_model
+
+        for m in ("oai-gpt-4.1", "omega-chat", "o365-grader", "gpt-4o",
+                  "gpt-4o-mini", "olmo-2"):
+            assert not is_reasoning_model(m), m
+
+
+# ---------------------------------------------------------------------------
+# 13: corrupt dataset lines are a hard error, not a silent row drop
+# ---------------------------------------------------------------------------
+
+
+class TestGepaLoadJsonl:
+    def test_corrupt_line_is_hard_error(self, tmp_path):
+        pytest.importorskip("dspy")  # harness imports dspy at module level
+        from rewriter.repro.gepa.harness import load_jsonl
+
+        p = tmp_path / "dataset.jsonl"
+        p.write_text('{"ok": 1}\n{"truncated": \n{"ok": 2}\n')
+        with pytest.raises(ValueError, match="corrupt JSONL"):
+            load_jsonl(str(p))
+
+    def test_blank_lines_still_skipped(self, tmp_path):
+        pytest.importorskip("dspy")
+        from rewriter.repro.gepa.harness import load_jsonl
+
+        p = tmp_path / "dataset.jsonl"
+        p.write_text('{"ok": 1}\n\n{"ok": 2}\n')
+        assert len(load_jsonl(str(p))) == 2
+
+
 class TestGoldenCacheModelKey:
     def test_cache_does_not_cross_models(self, tmp_path):
         from rewriter.repro.build_dataset import GoldenCache, label_one

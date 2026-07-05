@@ -30,8 +30,18 @@ from openai import APIConnectionError, APIError, APITimeoutError, AsyncOpenAI, R
 
 
 def is_reasoning_model(model_alias: str) -> bool:
-    """Reasoning models (o*/gpt-5) reject ``temperature``."""
-    return model_alias.startswith("o") or model_alias.startswith("gpt-5")
+    """Reasoning models (o1/o3/o4 and gpt-5 families) reject ``temperature``.
+
+    Matched by explicit family prefix with a boundary — a bare
+    ``startswith("o")`` would misclassify any deployment name beginning with
+    "o" (e.g. ``oai-gpt-4.1``), silently dropping ``temperature=0.0`` and
+    making grader labels nondeterministic.
+    """
+    m = model_alias.lower()
+    if m.startswith("gpt-5"):
+        return True
+    return any(m == fam or m.startswith(fam + "-") or m.startswith(fam + ".")
+               for fam in ("o1", "o3", "o4"))
 
 
 class OpenAIChatClient:

@@ -35,12 +35,12 @@ def test_router_loads_bundled_weights():
 
 @pytest.mark.skipif(not os.path.exists(ACTS), reason="activation fixture missing")
 def test_score_and_route_committed_activations():
-    # weights_only=True with an explicit numpy allowlist: the committed
-    # fixture stores an ndarray of offsets (review finding #15).
-    with torch.serialization.safe_globals(
-        [np._core.multiarray._reconstruct, np.ndarray, np.dtype, np.dtypes.Int64DType]
-    ):
-        blob = torch.load(ACTS, map_location="cpu", weights_only=True)
+    # weights_only=True with NO allowlist: the fixture stores plain tensors
+    # (offsets as a LongTensor, not an ndarray), so the safe load works on
+    # the pinned requirement floors (torch>=2.3, numpy>=1.26) — the
+    # allowlist APIs (torch.serialization.safe_globals, np._core paths) do
+    # not exist there (round-3 review finding #14).
+    blob = torch.load(ACTS, map_location="cpu", weights_only=True)
     tokens, offsets = blob["tokens"], np.asarray(blob["offsets"])
     n = len(offsets) - 1
 
