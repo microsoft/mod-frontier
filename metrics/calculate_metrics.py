@@ -32,7 +32,7 @@ import sys
 
 def load_data(path):
     rows = []
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:

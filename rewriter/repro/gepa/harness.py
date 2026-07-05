@@ -65,7 +65,7 @@ def load_jsonl(path: str) -> list[dict[str, Any]]:
     split than ``result.json`` claims.
     """
     rows: list[dict[str, Any]] = []
-    with Path(path).open() as f:
+    with Path(path).open(encoding="utf-8") as f:
         for ln, line in enumerate(f, 1):
             line = line.strip()
             if not line:

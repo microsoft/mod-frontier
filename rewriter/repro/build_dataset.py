@@ -147,7 +147,7 @@ def content_hash(s: str | None) -> str:
 def read_jsonl(path: str) -> list[dict[str, Any]]:
     """Read a JSONL file into a list of dicts (blank lines skipped)."""
     out = []
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
