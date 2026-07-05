@@ -252,7 +252,14 @@ def clean_completion(completion: str) -> str:
         if completion.lower().startswith(prefix.lower()):
             completion = completion[len(prefix):].lstrip()
             break
-    completion = re.sub(r"^\s*assistant\s*:?\s*", "", completion, count=1, flags=re.IGNORECASE)
+    # Strip a leading "assistant" role marker only when it has role-marker
+    # shape: followed by a colon, or alone on the first line. A bare word
+    # boundary is not enough -- "Assistant managers should..." satisfies
+    # ``assistant\b`` and would still lose its first word, and the old
+    # boundary-less pattern also mangled "Assistantship applications...".
+    completion = re.sub(
+        r"^\s*assistant\s*(?::|\n)\s*", "", completion, count=1, flags=re.IGNORECASE
+    )
     return completion
 
 
