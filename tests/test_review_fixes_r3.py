@@ -18,7 +18,7 @@ from rewriter.rewrite import clean_completion
 from rewriter.routing import file_sha256
 
 # The round-2 test module carries the shared tiny-universe assemble helper.
-from test_review_fixes import GOOD_GRADE, GOOD_RW, assemble, base_rows
+from test_review_fixes import GOOD_GRADE, GOOD_RW, GOOD_T5, assemble, base_rows
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -124,15 +124,15 @@ class TestGradeTextBinding:
         # same index, same conv_id (both legacy checks pass), different text
         new_rw = dict(GOOD_RW, model_output_rw_probe_probe="a DIFFERENT rewrite")
         with pytest.raises(SystemExit, match="DIFFERENT rewrite text"):
-            assemble(tmp_path, [new_rw], [GOOD_GRADE], {"1": 0})
+            assemble(tmp_path, [new_rw], [GOOD_GRADE], GOOD_T5)
 
     def test_hashless_legacy_grade_is_hard_error(self, tmp_path):
         legacy = {k: v for k, v in GOOD_GRADE.items() if k != "text_sha256"}
         with pytest.raises(SystemExit, match="text_sha256"):
-            assemble(tmp_path, [GOOD_RW], [legacy], {"1": 0})
+            assemble(tmp_path, [GOOD_RW], [legacy], GOOD_T5)
 
     def test_matching_hash_assembles(self, tmp_path):
-        out = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], {"1": 0})
+        out = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], GOOD_T5)
         assert out[1]["model_output_rw_probe_probe"] == "a safe rewrite"
 
 
@@ -148,7 +148,7 @@ def assemble_args(d, *, t5_prompts, grade_prompts, flag_field="T5_model_output_g
     write_jsonl(d / "data.jsonl", rows if rows is not None else base_rows())
     write_jsonl(d / "rw.jsonl", rewrites if rewrites is not None else [GOOD_RW])
     write_jsonl(d / "grades.jsonl", grades if grades is not None else [GOOD_GRADE])
-    (d / "t5_rw.json").write_text(json.dumps({"1": 0}))
+    (d / "t5_rw.json").write_text(json.dumps(GOOD_T5))
     (d / "t5_prompts.json").write_text(json.dumps(t5_prompts))
     (d / "grade_prompts.json").write_text(json.dumps(grade_prompts))
     return argparse.Namespace(

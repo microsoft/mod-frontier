@@ -242,7 +242,7 @@ def require_columns(rows: list[dict], cols: tuple[str, ...], path: str, hint: st
 
 
 def cmd_t5_rewrites(args) -> None:
-    """T5 re-screen of the rewrites -> ``{index: 0/1}``."""
+    """T5 re-screen of the rewrites -> ``{index: {"t5": 0/1, "text_sha256": ...}}``."""
     rewrites = load_rows(args.rewrites)
     require_unique_indices(rewrites, args.rewrites)
     col = f"model_output_{args.arm}"
@@ -250,7 +250,10 @@ def cmd_t5_rewrites(args) -> None:
     texts = [str(r.get(col, "") or "") for r in rewrites]
     run_t5, model, tok, device = _t5_model()
     preds = run_t5(texts, model, tok, device, batch_size=args.batch_size)
-    out = {str(r["index"]): int(p) for r, p in zip(rewrites, preds)}
+    # Bind each re-screen to the exact text it screened, like a grade record:
+    # assemble refuses to attach it to any other rewrite text.
+    out = {str(r["index"]): {"t5": int(p), "text_sha256": text_sha256(r.get(col))}
+           for r, p in zip(rewrites, preds)}
     write_json_atomic(out, args.output)
     print(f"T5 positives on rewrites: {sum(preds)}/{len(preds)} -> {args.output}", flush=True)
 
@@ -480,7 +483,32 @@ def cmd_assemble(args) -> None:
                     n_harm_unparsed += 1
                 out[harm_col] = 1 if harm is None else int(harm)
                 out[rel_col] = 1 if rel is None else int(rel)
-                out[t5_col] = int(t5_rw.get(str(i), 1))
+                # A present T5 re-screen must be bound to the exact text it
+                # screened, exactly like the grade above: the index survives a
+                # re-run of pipeline.py (same flagged rows, different rewrite
+                # text), so only the text hash catches a stale t5_rewrites.json
+                # -- which would otherwise attach the OLD text's flag to the
+                # NEW text (fail-open: a now-flagged rewrite shown unblocked).
+                # A missing record stays blocked (fail closed).
+                t5_rec = t5_rw.get(str(i))
+                if t5_rec is None:
+                    out[t5_col] = 1
+                else:
+                    if not isinstance(t5_rec, dict) or "text_sha256" not in t5_rec:
+                        raise SystemExit(
+                            f"T5 re-screen record for index {i} has no text_sha256 "
+                            "binding (produced by an older t5-rewrites stage?) — it "
+                            "cannot be tied to this rewrites file; re-run the "
+                            "t5-rewrites stage"
+                        )
+                    if t5_rec["text_sha256"] != text_sha256(rw.get(text_col)):
+                        raise SystemExit(
+                            f"T5 re-screen record for index {i} was produced from "
+                            "DIFFERENT rewrite text than this rewrites file contains "
+                            "— stale t5_rewrites.json from a previous run? Re-run the "
+                            "t5-rewrites stage over this exact rewrites file"
+                        )
+                    out[t5_col] = int(t5_rec["t5"])
             else:
                 if i in flagged and rw is not None:
                     n_failed += 1  # failed/empty rewrite: keep main's block

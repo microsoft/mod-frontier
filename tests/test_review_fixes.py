@@ -65,20 +65,22 @@ GOOD_RW = {"index": 1, "conv_id": "bbb", "model_output_rw_probe_probe": "a safe 
            "rw_latency_s": 1.0, "rw_success": True}
 GOOD_GRADE = {"index": 1, "conv_id": "bbb", "toxicity_label": 0, "relevance_score": 3,
               "text_sha256": eval_e2e.text_sha256("a safe rewrite")}
+# T5 re-screen records are hash-bound to the screened text, like grade records.
+GOOD_T5 = {"1": {"t5": 0, "text_sha256": eval_e2e.text_sha256("a safe rewrite")}}
 
 
 class TestAssembleFailsClosed:
     """Review #2/#3: generation/grading failures must keep main's block."""
 
     def test_happy_path_unblocks(self, tmp_path):
-        out = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], {"1": 0})
+        out = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], GOOD_T5)
         assert out[1]["T5_model_output_rw_probe_probe"] == 0
         assert out[1]["grader_model_output_rw_probe_probe"] == 0
         assert out[1]["model_output_rw_probe_probe"] == "a safe rewrite"
 
     def test_empty_rewrite_stays_blocked(self, tmp_path):
         rw = dict(GOOD_RW, **{"model_output_rw_probe_probe": "", "rw_success": False})
-        out = assemble(tmp_path, [rw], [], {"1": 0})
+        out = assemble(tmp_path, [rw], [], GOOD_T5)
         # fail closed: the flagged row keeps the original block + grades
         assert out[1]["T5_model_output_rw_probe_probe"] == 1
         assert out[1]["grader_model_output_rw_probe_probe"] == 1
@@ -86,17 +88,17 @@ class TestAssembleFailsClosed:
 
     def test_rw_success_false_stays_blocked_even_with_text(self, tmp_path):
         rw = dict(GOOD_RW, rw_success=False)
-        out = assemble(tmp_path, [rw], [], {"1": 0})
+        out = assemble(tmp_path, [rw], [], GOOD_T5)
         assert out[1]["T5_model_output_rw_probe_probe"] == 1
 
     def test_none_harm_grade_counts_as_harmful(self, tmp_path):
         grade = dict(GOOD_GRADE, toxicity_label=None)
-        out = assemble(tmp_path, [GOOD_RW], [grade], {"1": 0})
+        out = assemble(tmp_path, [GOOD_RW], [grade], GOOD_T5)
         assert out[1]["grader_model_output_rw_probe_probe"] == 1  # NEVER 0
 
     def test_missing_grade_record_is_hard_error(self, tmp_path):
         with pytest.raises(SystemExit):
-            assemble(tmp_path, [GOOD_RW], [], {"1": 0})
+            assemble(tmp_path, [GOOD_RW], [], GOOD_T5)
 
     def test_missing_t5_rescreen_stays_blocked(self, tmp_path):
         out = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], {})
@@ -105,14 +107,14 @@ class TestAssembleFailsClosed:
     def test_conv_id_mismatch_is_hard_error(self, tmp_path):
         rw = dict(GOOD_RW, conv_id="WRONG")
         with pytest.raises(SystemExit):
-            assemble(tmp_path, [rw], [GOOD_GRADE], {"1": 0})
+            assemble(tmp_path, [rw], [GOOD_GRADE], GOOD_T5)
 
     def test_reassemble_strips_stale_columns(self, tmp_path):
         # first assemble: success; second over the assembled file with the
         # rewrite now failed -> the stale text/grades must not survive
-        rows1 = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], {"1": 0})
+        rows1 = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], GOOD_T5)
         rw_failed = dict(GOOD_RW, **{"model_output_rw_probe_probe": "", "rw_success": False})
-        rows2 = assemble(tmp_path, [rw_failed], [], {"1": 0},
+        rows2 = assemble(tmp_path, [rw_failed], [], GOOD_T5,
                          out_name="out2.jsonl", rows=rows1)
         assert "model_output_rw_probe_probe" not in rows2[1]
         assert rows2[1]["T5_model_output_rw_probe_probe"] == 1
