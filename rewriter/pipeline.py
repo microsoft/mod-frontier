@@ -57,14 +57,24 @@ def flagged_indices(rows: list[dict], flag_field: str) -> list[int]:
     return [i for i, r in enumerate(rows) if str(r.get(flag_field)) == "1"]
 
 
-def load_routing_cache(path: str, expected_threshold: float) -> dict[str, dict]:
+def load_routing_cache(path: str, expected_threshold: float, input_path: str) -> dict[str, dict]:
     """Load a routing cache produced by ``rewriter/routing.py``, validating provenance.
 
-    Refuse decisions are threshold-dependent, and cache-missing rows are
-    routed live at ``expected_threshold`` — mixing decisions made at two
-    thresholds in one run must be impossible, so a cache without a
-    ``_meta.threshold`` record, or with a different threshold, is a hard error.
+    Two hard gates, because the cache is keyed by bare positional row index:
+
+    * **Threshold.** Refuse decisions are threshold-dependent, and cache-missing
+      rows are routed live at ``expected_threshold`` — mixing decisions made at
+      two thresholds in one run must be impossible.
+    * **Input identity.** The cache is only valid against the exact input file
+      it was produced from: applied to a regenerated, filtered, or re-ordered
+      file, every row would silently get another row's REFUSE/REWRITE decision
+      and domain. The cache's ``_meta.input_sha256`` must match ``input_path``.
+
+    A cache missing either record (produced by an older ``rewriter/routing.py``)
+    is a hard error: regenerate it, or route live by omitting ``--routing-cache``.
     """
+    from rewriter.routing import file_sha256
+
     with open(path, encoding="utf-8") as f:
         routing = json.load(f)
     meta = routing.pop("_meta", None)
@@ -80,6 +90,22 @@ def load_routing_cache(path: str, expected_threshold: float) -> dict[str, dict]:
             f"{path} was produced at threshold {cache_threshold!r}, but this "
             f"pipeline routes at {expected_threshold}; refusing to mix decisions "
             "made at two thresholds"
+        )
+    cache_sha = meta.get("input_sha256")
+    if cache_sha is None:
+        raise SystemExit(
+            f"{path} has no _meta.input_sha256 record (produced by an older "
+            "rewriter/routing.py?) — its decisions cannot be tied to this input "
+            "file; regenerate it, or route live by omitting --routing-cache"
+        )
+    actual_sha = file_sha256(input_path)
+    if cache_sha != actual_sha:
+        raise SystemExit(
+            f"{path} was produced from a different input file "
+            f"(cache input_sha256 {cache_sha[:12]}…, {input_path} is {actual_sha[:12]}…, "
+            f"cache says {meta.get('input_path')!r} with {meta.get('n_input_rows')} rows). "
+            "Row indices would attach other rows' REFUSE/REWRITE decisions — "
+            "re-run rewriter/routing.py on this exact file"
         )
     return routing
 
@@ -123,10 +149,18 @@ def main() -> None:
 
     # Routing: cache first, live for anything missing.
     routing: dict[str, dict] = {}
-    if args.routing_cache and os.path.exists(args.routing_cache):
+    if args.routing_cache:
+        if not os.path.exists(args.routing_cache):
+            # An explicitly requested cache that isn't there must not silently
+            # fall through to a full live GPU re-route (hours of unplanned
+            # compute, and possibly at a threshold the user did not choose).
+            raise SystemExit(
+                f"--routing-cache {args.routing_cache} does not exist — fix the "
+                "path, or omit --routing-cache to route live on purpose"
+            )
         from rewriter.routing import REFUSE_THRESHOLD
 
-        routing = load_routing_cache(args.routing_cache, REFUSE_THRESHOLD)
+        routing = load_routing_cache(args.routing_cache, REFUSE_THRESHOLD, args.input)
         print(f"Loaded {len(routing)} cached routing decisions "
               f"(threshold={REFUSE_THRESHOLD})", flush=True)
     missing = [i for i in idxs if str(i) not in routing]

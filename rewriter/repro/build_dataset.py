@@ -505,10 +505,13 @@ def _extract_json(text: str) -> dict:
 
 
 class GoldenCache:
-    """Thread-safe on-disk cache of opus golden labels, keyed by row id.
+    """Thread-safe on-disk cache of golden labels, keyed by (row id, model).
 
     Makes the ``label`` stage resumable: already-labeled rows are skipped on
-    re-run.
+    re-run. The labeler model is part of the key — a bare-row-id key would
+    silently serve one model's cached labels to a ``label`` re-run with a
+    different ``--model``, mixing two labelers' judgments in one pool with no
+    distinguishing field.
     """
 
     def __init__(self, path: str):
@@ -543,7 +546,7 @@ def label_one(client, row: dict, cache: GoldenCache, model: str) -> dict:
     unlabeled, or a genuinely harmful row would silently stay in the rewrite
     training pool on resume instead of being retried.
     """
-    key = row["id"]
+    key = f"{row['id']}@model={model}"
     cached = cache.get(key)
     if cached is not None and cached.get("golden_toxic") is not None:
         return cached
@@ -564,11 +567,12 @@ def label_one(client, row: dict, cache: GoldenCache, model: str) -> dict:
             "golden_toxic": int(bool(parsed.get("toxic", 0))),
             "golden_severity": int(parsed.get("severity", 0)),
             "golden_rationale": str(parsed.get("rationale", ""))[:200],
+            "golden_model": model,  # provenance: which labeler produced this row
         }
     except Exception as e:
         # Do NOT cache the error record: the next run retries this row.
         return {"golden_domain": None, "golden_toxic": None, "golden_severity": None,
-                "golden_rationale": f"ERR: {repr(e)[:120]}"}
+                "golden_rationale": f"ERR: {repr(e)[:120]}", "golden_model": model}
     cache.set(key, res)
     return res
 

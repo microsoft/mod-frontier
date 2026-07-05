@@ -27,6 +27,7 @@ jobs and so decisions are inspectable.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from dataclasses import asdict, dataclass
@@ -50,6 +51,15 @@ DOMAINS = (
     "task_assistance",
     "translation_transcription",
 )
+
+
+def file_sha256(path: str) -> str:
+    """SHA-256 of a file's bytes (identity stamp for routing-cache provenance)."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 @dataclass
@@ -129,11 +139,17 @@ def main() -> None:
     decisions = route_prompts(prompts, threshold=args.threshold, batch_size=args.batch_size)
 
     cache = {str(i): asdict(d) for i, d in zip(idxs, decisions)}
-    # Provenance: decisions are threshold-dependent, and a consumer mixing a
-    # cache made at one threshold with live routing at another would produce
-    # inconsistent REFUSE/REWRITE decisions. pipeline.py hard-errors when this
-    # record is missing or disagrees with its own threshold.
-    cache["_meta"] = {"threshold": args.threshold}
+    # Provenance: decisions are threshold-dependent, and the cache is keyed by
+    # positional row index, so it is only valid against the exact input file it
+    # was produced from — a regenerated/filtered/re-ordered file would silently
+    # get other rows' REFUSE/REWRITE decisions. pipeline.py hard-errors when
+    # this record is missing, or when the threshold or input hash disagrees.
+    cache["_meta"] = {
+        "threshold": args.threshold,
+        "input_sha256": file_sha256(args.input),
+        "input_path": Path(args.input).name,
+        "n_input_rows": len(rows),
+    }
     dec_counts: dict[str, int] = {}
     dom_counts: dict[str, int] = {}
     for d in decisions:

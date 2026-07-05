@@ -50,6 +50,7 @@ Example (the 30-row reproduction check):
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -120,8 +121,37 @@ def load_rows(path: str) -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
+def _duplicate_index_error(path: str, index: int) -> SystemExit:
+    return SystemExit(
+        f"{path}: duplicate record for index {index} — the file mixes two runs' "
+        "outputs (an appended re-run or concatenated shards?); one run's grade "
+        "would silently attach to another run's text. Regenerate the file"
+    )
+
+
 def load_jsonl_by_index(path: str) -> dict[int, dict]:
-    return {int(r["index"]): r for r in load_rows(path)}
+    out: dict[int, dict] = {}
+    for r in load_rows(path):
+        i = int(r["index"])
+        if i in out:
+            raise _duplicate_index_error(path, i)
+        out[i] = r
+    return out
+
+
+def require_unique_indices(records: list[dict], path: str) -> None:
+    """Hard-error on duplicate ``index`` values in an order-preserving list."""
+    seen: set[int] = set()
+    for r in records:
+        i = int(r["index"])
+        if i in seen:
+            raise _duplicate_index_error(path, i)
+        seen.add(i)
+
+
+def text_sha256(text) -> str:
+    """Identity hash of a rewrite text (binds a grade record to what it graded)."""
+    return hashlib.sha256(str(text or "").encode("utf-8")).hexdigest()
 
 
 def write_json_atomic(obj, path: str) -> None:
@@ -181,6 +211,7 @@ def rewrite_ok(record: dict, col: str) -> bool:
 def cmd_t5_rewrites(args) -> None:
     """T5 re-screen of the rewrites -> ``{index: 0/1}``."""
     rewrites = load_rows(args.rewrites)
+    require_unique_indices(rewrites, args.rewrites)
     col = f"model_output_{args.arm}"
     require_arm_column(rewrites, col, args.rewrites)
     texts = [str(r.get(col, "") or "") for r in rewrites]
@@ -252,6 +283,7 @@ def cmd_grade(args) -> None:
     core = graders_core(args.grader_auth)
     data = load_rows(args.input)
     rewrites = load_rows(args.rewrites)
+    require_unique_indices(rewrites, args.rewrites)
     col = f"model_output_{args.arm}"
     require_arm_column(rewrites, col, args.rewrites)
     responses = [str(r.get(col, "") or "") for r in rewrites]
@@ -272,10 +304,13 @@ def cmd_grade(args) -> None:
     tox, rel = asyncio.run(run())
     tmp = args.output + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        for r, t, rl in zip(rewrites, tox, rel):
+        for r, resp, t, rl in zip(rewrites, responses, tox, rel):
             f.write(json.dumps({
                 "index": r["index"],
                 "conv_id": r.get("conv_id"),
+                # Bind the grade to the exact text it graded: assemble refuses
+                # to attach this record to any other rewrite text.
+                "text_sha256": text_sha256(resp),
                 "toxicity_label": t,
                 "relevance_score": rl,
             }, ensure_ascii=False) + "\n")
@@ -358,6 +393,25 @@ def cmd_assemble(args) -> None:
                     )
                 n_rw += 1
                 g = grades[i]
+                # The grade must be bound to the exact text it graded: index and
+                # conv_id both survive a re-run of pipeline.py (same flagged rows,
+                # different rewrite text), so only the text hash catches stale
+                # grades — which would otherwise attach the OLD text's harm label
+                # to the NEW text, a fail-open outcome.
+                g_hash = g.get("text_sha256")
+                if g_hash is None:
+                    raise SystemExit(
+                        f"grade record for index {i} has no text_sha256 binding "
+                        "(produced by an older grade stage?) — it cannot be tied "
+                        "to this rewrites file; re-run the grade stage"
+                    )
+                if g_hash != text_sha256(rw.get(text_col)):
+                    raise SystemExit(
+                        f"grade record for index {i} was produced from DIFFERENT "
+                        "rewrite text than this rewrites file contains — stale "
+                        "grades from a previous run? Re-run the grade stage over "
+                        "this exact rewrites file"
+                    )
                 harm = g.get("toxicity_label")
                 rel = g.get("relevance_score")
                 out[text_col] = rw.get(text_col)

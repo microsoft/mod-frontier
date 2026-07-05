@@ -63,7 +63,8 @@ def assemble(tmp_path, rewrites, grades, t5_rw, out_name="out.jsonl", rows=None)
 GOOD_RW = {"index": 1, "conv_id": "bbb", "model_output_rw_probe_probe": "a safe rewrite",
            "rw_decision": "REWRITE", "rw_domain": "other", "rw_prompt_id": "gepa960/other",
            "rw_latency_s": 1.0, "rw_success": True}
-GOOD_GRADE = {"index": 1, "conv_id": "bbb", "toxicity_label": 0, "relevance_score": 3}
+GOOD_GRADE = {"index": 1, "conv_id": "bbb", "toxicity_label": 0, "relevance_score": 3,
+              "text_sha256": eval_e2e.text_sha256("a safe rewrite")}
 
 
 class TestAssembleFailsClosed:
@@ -172,27 +173,38 @@ class TestMetricsRobustness:
 
 
 class TestRoutingCacheProvenance:
-    """Review #14: caches without threshold provenance (or at a different
-    threshold) are hard errors."""
+    """Review #14 (round 2) + #1 (round 3): caches without threshold or input
+    provenance, at a different threshold, or from a different input file are
+    hard errors."""
+
+    @staticmethod
+    def _input(tmp_path, content='{"user_input": "p0"}\n'):
+        f = tmp_path / "data.jsonl"
+        f.write_text(content)
+        return str(f)
 
     def test_missing_meta_is_hard_error(self, tmp_path):
         p = tmp_path / "cache.json"
         p.write_text(json.dumps({"0": {"decision": "REWRITE", "domain": "other"}}))
         with pytest.raises(SystemExit):
-            load_routing_cache(str(p), 0.161)
+            load_routing_cache(str(p), 0.161, self._input(tmp_path))
 
     def test_threshold_mismatch_is_hard_error(self, tmp_path):
         p = tmp_path / "cache.json"
         p.write_text(json.dumps({"_meta": {"threshold": 0.370},
                                  "0": {"decision": "REWRITE", "domain": "other"}}))
         with pytest.raises(SystemExit):
-            load_routing_cache(str(p), 0.161)
+            load_routing_cache(str(p), 0.161, self._input(tmp_path))
 
-    def test_matching_threshold_loads(self, tmp_path):
+    def test_matching_threshold_and_input_loads(self, tmp_path):
+        from rewriter.routing import file_sha256
+
+        inp = self._input(tmp_path)
         p = tmp_path / "cache.json"
-        p.write_text(json.dumps({"_meta": {"threshold": 0.161},
+        p.write_text(json.dumps({"_meta": {"threshold": 0.161,
+                                           "input_sha256": file_sha256(inp)},
                                  "0": {"decision": "REWRITE", "domain": "other"}}))
-        cache = load_routing_cache(str(p), 0.161)
+        cache = load_routing_cache(str(p), 0.161, inp)
         assert "_meta" not in cache and "0" in cache
 
 
@@ -250,13 +262,14 @@ class TestGoldenCacheRetries:
         cache = GoldenCache(str(tmp_path / "golden_cache.json"))
         row = {"id": "row1", "prompt": "p", "response": "r"}
 
+        key = "row1@model=claude-opus-4-8"  # round-3 #10: cache keyed by (id, model)
         first = label_one(boom, row, cache, "claude-opus-4-8")
         assert first["golden_toxic"] is None          # errored
-        assert cache.get("row1") is None              # NOT persisted
+        assert cache.get(key) is None                 # NOT persisted
 
         second = label_one(ok, row, cache, "claude-opus-4-8")
         assert second["golden_toxic"] == 1            # retried, not served from cache
-        assert cache.get("row1")["golden_toxic"] == 1  # success IS cached
+        assert cache.get(key)["golden_toxic"] == 1    # success IS cached
 
     def test_legacy_error_record_is_retried(self, tmp_path):
         from rewriter.repro.build_dataset import GoldenCache, label_one
