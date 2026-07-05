@@ -208,6 +208,39 @@ def rewrite_ok(record: dict, col: str) -> bool:
     return bool(record.get("rw_success")) and bool(str(record.get(col) or "").strip())
 
 
+def base_arm_from_flag_field(flag_field: str) -> str:
+    """Baseline arm suffix implied by ``--flag-field`` (``T5_model_output_gpt5`` -> ``gpt5``).
+
+    The pass-through/baseline columns must come from the same base arm the
+    flag did: hardcoding ``gpt5`` would silently populate pass-through rows
+    with one baseline's values while flagging against another — an incoherent
+    hybrid of two baselines with no error.
+    """
+    prefix = "T5_model_output_"
+    base = flag_field[len(prefix):] if flag_field.startswith(prefix) else ""
+    if not base:
+        raise SystemExit(
+            f"cannot derive the baseline arm from --flag-field {flag_field!r} "
+            "(expected the shape T5_model_output_<base>); the pass-through/"
+            "baseline columns would be ambiguous"
+        )
+    return base
+
+
+def require_columns(rows: list[dict], cols: tuple[str, ...], path: str, hint: str) -> None:
+    """Hard-error when any of ``cols`` is absent from every row.
+
+    ``as_int(missing, 0)`` would otherwise silently read the whole column as
+    0 — which for the safety columns is the fail-open, better-than-real fill.
+    """
+    for col in cols:
+        if rows and not any(col in r for r in rows):
+            raise SystemExit(
+                f"{path}: no row has the column {col!r} — {hint}. Refusing to "
+                "default it to 0 on every row (fail-open)"
+            )
+
+
 def cmd_t5_rewrites(args) -> None:
     """T5 re-screen of the rewrites -> ``{index: 0/1}``."""
     rewrites = load_rows(args.rewrites)
@@ -352,10 +385,34 @@ def cmd_assemble(args) -> None:
     grader_prompts = json.load(open(args.grade_prompts, encoding="utf-8"))
 
     arm = args.arm
+    base = base_arm_from_flag_field(args.flag_field)
     text_col = f"model_output_{arm}"
     harm_col = f"grader_model_output_{arm}"
     rel_col = f"relevance_score_{arm}"
     t5_col = f"T5_model_output_{arm}"
+
+    # Pass-through rows show the base arm's original response, so its grade
+    # and T5 columns must exist on the input (fail-closed: a wrong input file
+    # or flag field must not read as all-zeros = all-safe).
+    require_columns(
+        rows, (f"grader_model_output_{base}", f"T5_model_output_{base}"),
+        args.input, "wrong --flag-field base, or not a graded evaluation file",
+    )
+
+    # Prompt-level files must cover every row: absent indices would silently
+    # default to unflagged/harmless, under-blocking the prompt and both-filter
+    # scenarios and corrupting the FP-rate reference (fail-open) — unlike the
+    # fail-closed handling of rewrite grades and T5 re-screens below.
+    for label, path, d in (("--t5-prompts", args.t5_prompts, t5_prompts),
+                           ("--grade-prompts", args.grade_prompts, grader_prompts)):
+        missing = [i for i in range(len(rows)) if str(i) not in d]
+        if missing:
+            raise SystemExit(
+                f"{path} covers {len(rows) - len(missing)}/{len(rows)} rows "
+                f"(e.g. missing indices {missing[:5]}) — {label} was produced "
+                "from a different or truncated dataset; re-run that stage over "
+                "this exact input file"
+            )
 
     # A flagged row's rewrite must exist, be marked successful, be non-empty,
     # and carry a parseable harm grade -- anything less FAILS CLOSED: the row
@@ -381,8 +438,8 @@ def cmd_assemble(args) -> None:
             # (e.g. a rewrite that succeeded before but fails closed now).
             for col in (text_col, harm_col, rel_col, t5_col):
                 out.pop(col, None)
-            out["T5_user_input"] = int(t5_prompts.get(str(i), 0))
-            gui = grader_prompts.get(str(i))
+            out["T5_user_input"] = int(t5_prompts[str(i)])
+            gui = grader_prompts[str(i)]  # coverage checked above; None = unparsed
             out["grader_user_input"] = int(gui) if gui is not None else 0
             rw = rewrites.get(i)
             if i in flagged and rw is not None and rewrite_ok(rw, text_col):
@@ -427,11 +484,12 @@ def cmd_assemble(args) -> None:
             else:
                 if i in flagged and rw is not None:
                     n_failed += 1  # failed/empty rewrite: keep main's block
-                # Pass-through: the system shows (or blocks) the original response.
-                out[harm_col] = as_int(row.get("grader_model_output_gpt5"), 0)
-                raw_rel = row.get("relevance_score_gpt5")
+                # Pass-through: the system shows (or blocks) the original
+                # response — the BASE arm's, resolved from --flag-field.
+                out[harm_col] = as_int(row.get(f"grader_model_output_{base}"), 0)
+                raw_rel = row.get(f"relevance_score_{base}")
                 out[rel_col] = None if raw_rel is None else as_int(raw_rel, None)
-                out[t5_col] = as_int(row.get("T5_model_output_gpt5"), 0)
+                out[t5_col] = as_int(row.get(f"T5_model_output_{base}"), 0)
             f.write(json.dumps(out, ensure_ascii=False) + "\n")
     os.replace(tmp, args.output)
     if n_failed:
@@ -469,10 +527,24 @@ def cmd_metrics(args) -> None:
     compute_metrics = compute_metrics_fn()
     rows = load_rows(args.input)
     flagged_idx = flagged_indices(rows, args.flag_field)
+    base = base_arm_from_flag_field(args.flag_field)
+
+    # Fail closed on a non-assembled input or a mistyped --arm: every per-arm
+    # column read below defaults to 0 via as_int, so a missing column would
+    # otherwise yield a perfect-looking (block_rate 0, harmful 0) table with
+    # no warning — the hard error the other subcommands already enforce.
+    for suffix in (base, args.arm):
+        require_columns(
+            rows, (f"grader_model_output_{suffix}", f"T5_model_output_{suffix}"),
+            args.input, f"not an assembled file, or wrong --arm/--flag-field "
+                        f"(expected the {suffix!r} arm columns)",
+        )
+    require_columns(rows, ("grader_user_input", "T5_user_input"), args.input,
+                    "not an assembled file (prompt-level columns absent)")
 
     def canonical(arm: str | None) -> list[dict]:
         """Rows in calculate_metrics' field vocabulary; ``arm=None`` = original."""
-        suffix = arm if arm else "gpt5"
+        suffix = arm if arm else base
         out = []
         for i, r in enumerate(rows):
             rel = r.get(f"relevance_score_{suffix}")

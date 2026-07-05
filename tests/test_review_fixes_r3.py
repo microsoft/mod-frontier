@@ -18,7 +18,7 @@ from rewriter.rewrite import clean_completion
 from rewriter.routing import file_sha256
 
 # The round-2 test module carries the shared tiny-universe assemble helper.
-from test_review_fixes import GOOD_GRADE, GOOD_RW, assemble
+from test_review_fixes import GOOD_GRADE, GOOD_RW, assemble, base_rows
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -134,6 +134,127 @@ class TestGradeTextBinding:
     def test_matching_hash_assembles(self, tmp_path):
         out = assemble(tmp_path, [GOOD_RW], [GOOD_GRADE], {"1": 0})
         assert out[1]["model_output_rw_probe_probe"] == "a safe rewrite"
+
+
+# ---------------------------------------------------------------------------
+# 3: prompt-level label files must cover every row (no fail-open 0-fills)
+# ---------------------------------------------------------------------------
+
+
+def assemble_args(d, *, t5_prompts, grade_prompts, flag_field="T5_model_output_gpt5",
+                  rows=None, rewrites=None, grades=None):
+    import argparse
+
+    write_jsonl(d / "data.jsonl", rows if rows is not None else base_rows())
+    write_jsonl(d / "rw.jsonl", rewrites if rewrites is not None else [GOOD_RW])
+    write_jsonl(d / "grades.jsonl", grades if grades is not None else [GOOD_GRADE])
+    (d / "t5_rw.json").write_text(json.dumps({"1": 0}))
+    (d / "t5_prompts.json").write_text(json.dumps(t5_prompts))
+    (d / "grade_prompts.json").write_text(json.dumps(grade_prompts))
+    return argparse.Namespace(
+        input=str(d / "data.jsonl"), rewrites=str(d / "rw.jsonl"),
+        grades=str(d / "grades.jsonl"), t5_rewrites=str(d / "t5_rw.json"),
+        t5_prompts=str(d / "t5_prompts.json"), grade_prompts=str(d / "grade_prompts.json"),
+        output=str(d / "out.jsonl"), arm="rw_probe_probe",
+        prompt_field="user_input", flag_field=flag_field,
+    )
+
+
+class TestPromptFileCoverage:
+    def test_truncated_t5_prompts_is_hard_error(self, tmp_path):
+        args = assemble_args(tmp_path, t5_prompts={"0": 0, "1": 1},  # row 2 missing
+                             grade_prompts={"0": 0, "1": 1, "2": 0})
+        with pytest.raises(SystemExit, match="t5-prompts"):
+            eval_e2e.cmd_assemble(args)
+
+    def test_truncated_grade_prompts_is_hard_error(self, tmp_path):
+        args = assemble_args(tmp_path, t5_prompts={"0": 0, "1": 1, "2": 0},
+                             grade_prompts={"1": 1})  # rows 0 and 2 missing
+        with pytest.raises(SystemExit, match="grade-prompts"):
+            eval_e2e.cmd_assemble(args)
+
+    def test_full_coverage_assembles(self, tmp_path):
+        args = assemble_args(tmp_path, t5_prompts={"0": 0, "1": 1, "2": 0},
+                             grade_prompts={"0": 0, "1": 1, "2": None})
+        eval_e2e.cmd_assemble(args)  # must not raise; None = unparsed, explicit
+        out = [json.loads(l) for l in open(tmp_path / "out.jsonl")]
+        assert out[2]["grader_user_input"] == 0  # explicit unparsed record
+
+
+# ---------------------------------------------------------------------------
+# 4: cmd_metrics must hard-error on missing arm columns, not report zeros
+# ---------------------------------------------------------------------------
+
+
+class TestMetricsArmColumnGuard:
+    def _metrics_args(self, tmp_path, rows, arm="rw_probe_probe"):
+        import argparse
+
+        write_jsonl(tmp_path / "in.jsonl", rows)
+        return argparse.Namespace(input=str(tmp_path / "in.jsonl"),
+                                  output=str(tmp_path / "m.json"), arm=arm,
+                                  prompt_field="user_input",
+                                  flag_field="T5_model_output_gpt5", n_boot=0)
+
+    def _assembled_rows(self):
+        rows = base_rows()
+        for r in rows:
+            r.update({"grader_model_output_rw_probe_probe": 0,
+                      "relevance_score_rw_probe_probe": 3,
+                      "T5_model_output_rw_probe_probe": 0,
+                      "T5_user_input": 0, "grader_user_input": 0})
+        return rows
+
+    def test_pre_assemble_input_is_hard_error(self, tmp_path):
+        # base columns exist, but no arm columns and no prompt-level columns
+        args = self._metrics_args(tmp_path, base_rows())
+        with pytest.raises(SystemExit, match="no row has the column"):
+            eval_e2e.cmd_metrics(args)
+
+    def test_mistyped_arm_is_hard_error(self, tmp_path):
+        args = self._metrics_args(tmp_path, self._assembled_rows(), arm="rw_probe")
+        with pytest.raises(SystemExit, match="rw_probe"):
+            eval_e2e.cmd_metrics(args)
+
+    def test_assembled_input_passes(self, tmp_path):
+        args = self._metrics_args(tmp_path, self._assembled_rows())
+        eval_e2e.cmd_metrics(args)  # must not raise
+        assert json.loads((tmp_path / "m.json").read_text())["meta"]["n_total"] == 3
+
+
+# ---------------------------------------------------------------------------
+# 6: pass-through columns come from --flag-field's base arm, never a
+#    hardcoded *_gpt5
+# ---------------------------------------------------------------------------
+
+
+class TestPassThroughBaseArm:
+    def test_non_gpt5_base_arm_pass_through(self, tmp_path):
+        # rows carry two baselines with DIFFERENT values; flag against otherbase
+        rows = []
+        for k, conv in enumerate(("aaa", "bbb", "ccc")):
+            rows.append({
+                "conv_id": conv, "user_input": f"p{k}",
+                "model_output_gpt5": "resp", "grader_model_output_gpt5": 1,
+                "relevance_score_gpt5": 1, "T5_model_output_gpt5": 1,
+                "model_output_otherbase": "resp2", "grader_model_output_otherbase": 0,
+                "relevance_score_otherbase": 3, "T5_model_output_otherbase": 0,
+            })
+        args = assemble_args(tmp_path, t5_prompts={"0": 0, "1": 0, "2": 0},
+                             grade_prompts={"0": 0, "1": 0, "2": 0},
+                             flag_field="T5_model_output_otherbase",
+                             rows=rows, rewrites=[], grades=[])
+        eval_e2e.cmd_assemble(args)
+        out = [json.loads(l) for l in open(tmp_path / "out.jsonl")]
+        # every row is unflagged pass-through: values must be otherbase's, not gpt5's
+        for r in out:
+            assert r["grader_model_output_rw_probe_probe"] == 0
+            assert r["relevance_score_rw_probe_probe"] == 3
+            assert r["T5_model_output_rw_probe_probe"] == 0
+
+    def test_underivable_flag_field_is_hard_error(self):
+        with pytest.raises(SystemExit, match="flag-field"):
+            eval_e2e.base_arm_from_flag_field("custom_flag_column")
 
 
 # ---------------------------------------------------------------------------
