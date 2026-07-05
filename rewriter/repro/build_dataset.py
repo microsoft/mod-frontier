@@ -654,9 +654,15 @@ def cmd_split(args: argparse.Namespace) -> None:
 
     rows = read_jsonl(os.path.join(args.out_dir, F_POOL_LABELED))
 
-    # eval-set disjointness assertion (rows were marked at harvest, dropped at label)
+    # Eval-set disjointness gate (rows were marked at harvest, dropped at
+    # label). SystemExit, not assert: an integrity gate must survive
+    # ``python -O`` / PYTHONOPTIMIZE, which strips asserts.
     overlap = [r for r in rows if r.get("in_excluded_eval")]
-    assert not overlap, f"{len(overlap)} rows overlap the excluded eval prompts — not disjoint!"
+    if overlap:
+        raise SystemExit(
+            f"{len(overlap)} rows overlap the excluded eval prompts — the "
+            "splits would leak the evaluation set; re-run harvest/label"
+        )
 
     # Unresolved golden labels are a hard error: reliably_harmful() would
     # silently treat golden_toxic=None as "not harmful" and leave genuinely
@@ -669,10 +675,16 @@ def cmd_split(args: argparse.Namespace) -> None:
             f"(e.g. {unresolved[:5]}); re-run the label stage before split"
         )
 
-    # group-disjointness: one row per source_prompt_hash
+    # Group-disjointness gate: one row per source_prompt_hash. SystemExit,
+    # not assert, for the same PYTHONOPTIMIZE reason as above.
     hcounts = Counter(r["source_prompt_hash"] for r in rows)
     dupes = {h: c for h, c in hcounts.items() if c > 1}
-    assert not dupes, f"{len(dupes)} source prompts appear >1x — groups not disjoint"
+    if dupes:
+        raise SystemExit(
+            f"{len(dupes)} source prompts appear >1x — groups are not "
+            "disjoint, so the splits would share source prompts; dedupe the "
+            "labeled pool before split"
+        )
 
     rng = random.Random(args.seed)
 
