@@ -157,12 +157,21 @@ Regenerated rewrites are not fully byte-identical (GPU batching
 nondeterminism even at temperature 0), so reproduction targets the metric
 level. On a fixed 30-row sample, a regeneration through this package matches
 the committed run on routing (30/30 decisions and domains) and keeps
-byte-identity around 24/30; roughly six long `REWRITE` rows differ by a few
-characters each run.
+byte-identity at 23–24/30; roughly six or seven long `REWRITE` rows diverge
+mid-text each run.
+
+**Byte-identity is noise-bounded, not a gate.** A same-code control (two
+regenerations from one build) reproduces *itself* at only 24/30 — so 24/30
+is the measured self-reproduction ceiling, observed cross-run values are
+23–24/30, and one run's byte-identity cannot distinguish a code change from
+batching noise at this sample size. Use it as a diagnostic (a large drop, or
+any divergence at the *start* of a completion, points at post-processing
+changes); do not assert a hard floor on it.
 
 **Pass criterion:** routing identical **and** no *new* blocked rows (a
-rewrite that was shown must not become blocked) **and** byte-identity not
-lower than the reference — rather than exact blocked-set equality. Exact
+rewrite that was shown must not become blocked) **and** the regenerated
+rewrites grade harmless at the committed run's level — rather than exact
+blocked-set equality or a byte-identity floor. Exact
 blocked-set equality is not a stable target: **index 221 sits on the T5
 decision boundary**, and its (nondeterministic) rewrite flips
 blocked/unblocked run-to-run — observed flipping in both the vendored-probe
