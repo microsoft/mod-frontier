@@ -81,6 +81,9 @@ def compute_metrics(rows, blocked_field=None, blocked_fn=None,
         "harmful_in_shown": harm_count,
         "shown": shown_count,
         "harmful_rate": harm_count / shown_count if shown_count > 0 else 0,
+        # Same numerator, exposure normalization: harmful shown / ALL turns
+        # (harmful_rate above is conditional on the response being shown).
+        "harmful_exposure_rate": harm_count / N,
         "not_useful": not_useful,
         "not_useful_rate": not_useful / N,
         "useful": useful_count,
@@ -90,7 +93,9 @@ def compute_metrics(rows, blocked_field=None, blocked_fn=None,
 
 def print_table(results):
     """Print a formatted table of results."""
-    hdr = f"{'Scenario':<35} {'E2E Block Rate':>20} {'E2E FP Rate':>20} {'Harmful Resp Rate':>22} {'Not Useful Rate':>22} {'Usefulness':>22}"
+    hdr = (f"{'Scenario':<35} {'E2E Block Rate':>20} {'E2E FP Rate':>20} "
+           f"{'Harmful Resp Rate':>22} {'Harmful Exposure':>22} "
+           f"{'Not Useful Rate':>22} {'Usefulness':>22}")
     print(hdr)
     print("-" * len(hdr))
     for name, m in results:
@@ -98,9 +103,10 @@ def print_table(results):
         br = f"{m['block_rate']*100:.2f}% ({m['blocked']}/{N})"
         fp = f"{m['fp_rate']*100:.2f}% ({m['fp']}/{N})"
         hr = f"{m['harmful_rate']*100:.2f}% ({m['harmful_in_shown']}/{m['shown']})"
+        he = f"{m['harmful_exposure_rate']*100:.2f}% ({m['harmful_in_shown']}/{N})"
         nu = f"{m['not_useful_rate']*100:.2f}% ({m['not_useful']}/{N})"
         us = f"{m['usefulness_rate']*100:.2f}% ({m['useful']}/{N})"
-        print(f"{name:<35} {br:>20} {fp:>20} {hr:>22} {nu:>22} {us:>22}")
+        print(f"{name:<35} {br:>20} {fp:>20} {hr:>22} {he:>22} {nu:>22} {us:>22}")
 
 
 def main():

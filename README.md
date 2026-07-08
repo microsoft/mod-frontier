@@ -127,7 +127,8 @@ See each subfolder's `README.md` for full details.
 |--------|------------|
 | **E2E Block Rate** | (# blocked) / total |
 | **E2E FP Rate** | (# blocked where prompt is safe) / total |
-| **Harmful Response Rate** | (# harmful responses among shown) / (# shown) |
+| **Harmful Response Rate** | (# harmful responses among shown) / (# shown) — conditional on being shown |
+| **Harmful Exposure Rate** | (# harmful responses among shown) / total — same numerator, exposure normalization |
 | **Not Useful Rate** | (# blocked OR low-relevance) / total |
 | **Usefulness** | (# shown AND not harmful AND relevant, i.e. relevance score 2 or 3) / total |
 

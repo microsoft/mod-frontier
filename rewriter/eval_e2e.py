@@ -69,7 +69,8 @@ DEFAULT_ARM = "rw_probe_probe"
 BOOTSTRAP_SEED = 42
 N_BOOT = 2000
 
-RATE_KEYS = ["block_rate", "fp_rate", "harmful_rate", "not_useful_rate", "usefulness_rate"]
+RATE_KEYS = ["block_rate", "fp_rate", "harmful_rate", "harmful_exposure_rate",
+             "not_useful_rate", "usefulness_rate"]
 
 
 # ---------------------------------------------------------------------------
@@ -626,6 +627,8 @@ def cmd_metrics(args) -> None:
         print(f"[{name}] flagged/response: block={f_resp['block_rate']:.4f} "
               f"({f_resp['blocked']}/{f_resp['total']}) "
               f"harmful_shown={f_resp['harmful_in_shown']}/{f_resp['shown']} "
+              f"harmful_exposure={f_resp['harmful_exposure_rate']:.4f} "
+              f"({f_resp['harmful_in_shown']}/{f_resp['total']}) "
               f"useful={f_resp['usefulness_rate']:.4f} ({f_resp['useful']}/{f_resp['total']})",
               flush=True)
 
