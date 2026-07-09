@@ -1,0 +1,766 @@
+{
+  "note": "50 recorded issue-11 test-split rows: domain OvR probs + gpt-5-mini label + expected raw/calibrated argmax domain",
+  "domains": [
+    "casual_interaction",
+    "creative_writing",
+    "information_seeking",
+    "other",
+    "practical_content",
+    "roleplay",
+    "task_assistance",
+    "translation_transcription"
+  ],
+  "n": 50,
+  "cases": [
+    {
+      "domain": [
+        2.616390702314675e-05,
+        0.0010089892894029617,
+        0.04807901382446289,
+        0.051663681864738464,
+        0.0012583655770868063,
+        1.2314746527408715e-05,
+        0.09659309685230255,
+        0.6527008414268494
+      ],
+      "llm_domain": "translation_transcription",
+      "expected_domain_raw": "translation_transcription",
+      "expected_domain_calibrated": "translation_transcription"
+    },
+    {
+      "domain": [
+        1.5786744134160813e-10,
+        0.99998939037323,
+        1.7182210285682231e-06,
+        7.311394438147545e-05,
+        2.840950219251681e-05,
+        1.414845542058174e-06,
+        2.377159398747608e-05,
+        1.4889606063661631e-06
+      ],
+      "llm_domain": "creative_writing",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        8.68919596541673e-06,
+        0.9969866871833801,
+        0.00017545826267451048,
+        0.022414430975914,
+        3.064907286898233e-05,
+        6.960309838177636e-05,
+        0.018538590520620346,
+        3.935022505174857e-06
+      ],
+      "llm_domain": "creative_writing",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        0.0009918808937072754,
+        3.4141842775170517e-07,
+        0.9991281628608704,
+        0.005171934142708778,
+        9.474201867476495e-09,
+        6.965099430544797e-08,
+        2.871568540285807e-05,
+        6.03644911834067e-10
+      ],
+      "llm_domain": "information_seeking",
+      "expected_domain_raw": "information_seeking",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        3.3031625434887246e-07,
+        0.9999754428863525,
+        1.433966417607735e-06,
+        1.6356976630049758e-05,
+        6.233826570678502e-05,
+        0.00029116790392436087,
+        0.022412439808249474,
+        8.80269396930089e-07
+      ],
+      "llm_domain": "creative_writing",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        2.880269903471344e-06,
+        0.7907617092132568,
+        1.1668517799989786e-05,
+        0.21338744461536407,
+        0.00010150072193937376,
+        0.015618175268173218,
+        0.7375059723854065,
+        3.3159762097056955e-05
+      ],
+      "llm_domain": "creative_writing",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        6.691948897241673e-07,
+        0.9996341466903687,
+        1.1231489224883262e-05,
+        7.049311534501612e-05,
+        7.309037755476311e-05,
+        0.00021337140060495585,
+        0.0014695492573082447,
+        2.2402973627322353e-06
+      ],
+      "llm_domain": "creative_writing",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        9.686005331133174e-10,
+        6.819746545261296e-08,
+        0.9998058676719666,
+        0.000783103343565017,
+        4.420326149556786e-08,
+        6.675727193261594e-10,
+        7.95549203758128e-06,
+        8.459619116329975e-10
+      ],
+      "llm_domain": "information_seeking",
+      "expected_domain_raw": "information_seeking",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        5.313732232004043e-10,
+        5.242383167569642e-07,
+        0.9997639060020447,
+        4.02164778279257e-06,
+        2.24437030738045e-07,
+        3.825327254958211e-08,
+        0.0012290369486436248,
+        9.640502618424307e-09
+      ],
+      "llm_domain": "information_seeking",
+      "expected_domain_raw": "information_seeking",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        2.707188813400041e-11,
+        2.59729546314702e-07,
+        0.9993554949760437,
+        4.128938599023968e-05,
+        3.899778278082522e-08,
+        3.2442584174674494e-09,
+        0.00019120474462397397,
+        1.5035960032605544e-08
+      ],
+      "llm_domain": "information_seeking",
+      "expected_domain_raw": "information_seeking",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        2.202163216225017e-07,
+        1.1659741971925541e-07,
+        1.7333793778107065e-07,
+        4.166057624388486e-05,
+        1.0514855830479064e-06,
+        1.4899007965141209e-06,
+        3.414999355300097e-06,
+        1.0
+      ],
+      "llm_domain": "translation_transcription",
+      "expected_domain_raw": "translation_transcription",
+      "expected_domain_calibrated": "translation_transcription"
+    },
+    {
+      "domain": [
+        1.5324118640691609e-09,
+        0.8564196228981018,
+        5.880183380213566e-06,
+        9.945674719347153e-06,
+        1.2589404718710284e-07,
+        0.7615309953689575,
+        0.00021547780488617718,
+        5.436512537926319e-07
+      ],
+      "llm_domain": "roleplay",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        3.1422476354237006e-07,
+        0.9990984201431274,
+        0.0010068691335618496,
+        0.35301661491394043,
+        7.350565169872425e-07,
+        1.114666119406138e-07,
+        1.755551784299314e-05,
+        2.1095722786412807e-06
+      ],
+      "llm_domain": "creative_writing",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        3.777401857973928e-08,
+        0.999988317489624,
+        1.959890596481273e-06,
+        2.645610766194295e-05,
+        6.349466275423765e-06,
+        6.81432493365719e-06,
+        5.109226185595617e-05,
+        1.0462686272916244e-09
+      ],
+      "llm_domain": "creative_writing",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        2.521262467780616e-05,
+        0.037963155657052994,
+        0.8108842968940735,
+        0.0009513107943348587,
+        0.005468818359076977,
+        0.0001035763998515904,
+        0.9550994634628296,
+        1.736300987431605e-07
+      ],
+      "llm_domain": "information_seeking",
+      "expected_domain_raw": "task_assistance",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        7.249592215430312e-08,
+        0.02488127537071705,
+        0.0001793878327589482,
+        2.304821691723191e-06,
+        6.025403490639292e-05,
+        0.9992814660072327,
+        0.02063186839222908,
+        1.9134983375579395e-08
+      ],
+      "llm_domain": "roleplay",
+      "expected_domain_raw": "roleplay",
+      "expected_domain_calibrated": "roleplay"
+    },
+    {
+      "domain": [
+        1.333109054257875e-07,
+        2.0977783066200573e-08,
+        4.558607002991266e-08,
+        9.489489457337186e-05,
+        1.5944813640089706e-05,
+        0.9999994039535522,
+        0.0008027844596654177,
+        1.1512931905599544e-06
+      ],
+      "llm_domain": "roleplay",
+      "expected_domain_raw": "roleplay",
+      "expected_domain_calibrated": "roleplay"
+    },
+    {
+      "domain": [
+        4.438127689354587e-06,
+        1.1897660812110189e-07,
+        1.9351871742401272e-05,
+        0.01006296556442976,
+        0.00014592490333598107,
+        9.172261343337595e-05,
+        1.1971570529567543e-05,
+        0.9993478655815125
+      ],
+      "llm_domain": "translation_transcription",
+      "expected_domain_raw": "translation_transcription",
+      "expected_domain_calibrated": "translation_transcription"
+    },
+    {
+      "domain": [
+        3.1539887004328193e-06,
+        0.0027347176801413298,
+        0.00030780117958784103,
+        0.0002921773411799222,
+        0.9967748522758484,
+        2.3462633180315606e-05,
+        0.0016524019883945584,
+        1.8245855244458653e-05
+      ],
+      "llm_domain": "practical_content",
+      "expected_domain_raw": "practical_content",
+      "expected_domain_calibrated": "practical_content"
+    },
+    {
+      "domain": [
+        1.0185211563040752e-09,
+        1.2942321347964025e-07,
+        0.9946736693382263,
+        1.9301676275063073e-06,
+        3.8131150859044283e-07,
+        8.7601030429596e-08,
+        0.01442623045295477,
+        3.656773230886756e-07
+      ],
+      "llm_domain": "information_seeking",
+      "expected_domain_raw": "information_seeking",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        0.013013653457164764,
+        0.003922060132026672,
+        0.00031802317244000733,
+        0.0002228476805612445,
+        0.9880714416503906,
+        0.0006655608303844929,
+        0.011116179637610912,
+        7.413793241539679e-07
+      ],
+      "llm_domain": "practical_content",
+      "expected_domain_raw": "practical_content",
+      "expected_domain_calibrated": "practical_content"
+    },
+    {
+      "domain": [
+        1.6101694630399344e-11,
+        6.82796974516009e-09,
+        0.9630825519561768,
+        2.3793998025212204e-06,
+        1.085775420506252e-05,
+        5.7785900509088606e-08,
+        0.03970756754279137,
+        1.097750896406069e-06
+      ],
+      "llm_domain": "information_seeking",
+      "expected_domain_raw": "information_seeking",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        0.0001262838050024584,
+        0.0012601767666637897,
+        8.045845788728911e-06,
+        0.009507638402283192,
+        0.0008867548895068467,
+        3.5729975934373215e-05,
+        0.039257295429706573,
+        0.9988006353378296
+      ],
+      "llm_domain": "translation_transcription",
+      "expected_domain_raw": "translation_transcription",
+      "expected_domain_calibrated": "translation_transcription"
+    },
+    {
+      "domain": [
+        3.0786949878347514e-08,
+        0.38985008001327515,
+        6.248575664358214e-05,
+        0.013495311141014099,
+        0.014961359091103077,
+        5.450697699416196e-06,
+        0.9956210255622864,
+        1.3693171752038324e-07
+      ],
+      "llm_domain": "task_assistance",
+      "expected_domain_raw": "task_assistance",
+      "expected_domain_calibrated": "task_assistance"
+    },
+    {
+      "domain": [
+        0.6583124399185181,
+        2.849717202479951e-05,
+        0.000503772113006562,
+        0.9997128844261169,
+        8.218003131332807e-06,
+        6.998136541369604e-07,
+        8.795772373559885e-06,
+        2.2839681435016246e-07
+      ],
+      "llm_domain": "other",
+      "expected_domain_raw": "other",
+      "expected_domain_calibrated": "other"
+    },
+    {
+      "domain": [
+        1.3257189790394364e-09,
+        0.0022825056221336126,
+        0.20471498370170593,
+        2.585563606771757e-06,
+        0.20348262786865234,
+        0.0003247019776608795,
+        0.8242068886756897,
+        8.463497920274676e-07
+      ],
+      "llm_domain": "task_assistance",
+      "expected_domain_raw": "task_assistance",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        2.123226927608357e-08,
+        0.22761410474777222,
+        0.00017297813610639423,
+        0.0011783329537138343,
+        0.9961931705474854,
+        7.085076969559623e-11,
+        0.0033651748672127724,
+        9.339495399274256e-09
+      ],
+      "llm_domain": "practical_content",
+      "expected_domain_raw": "practical_content",
+      "expected_domain_calibrated": "practical_content"
+    },
+    {
+      "domain": [
+        2.410231354588177e-05,
+        6.545783253386617e-05,
+        1.5171665381785715e-06,
+        0.0006219951319508255,
+        1.002831595542375e-05,
+        0.0001400898036081344,
+        0.0003992397687397897,
+        0.9998883008956909
+      ],
+      "llm_domain": "translation_transcription",
+      "expected_domain_raw": "translation_transcription",
+      "expected_domain_calibrated": "translation_transcription"
+    },
+    {
+      "domain": [
+        3.1790889352123486e-06,
+        0.00027314998442307115,
+        0.00011166372860316187,
+        0.00028090912383049726,
+        0.9995371103286743,
+        3.547672531567514e-05,
+        0.005313570611178875,
+        6.8848198679916095e-06
+      ],
+      "llm_domain": "practical_content",
+      "expected_domain_raw": "practical_content",
+      "expected_domain_calibrated": "practical_content"
+    },
+    {
+      "domain": [
+        4.742028281157218e-08,
+        0.002159588970243931,
+        0.012133033946156502,
+        0.00019271088240202516,
+        3.574899528757669e-05,
+        1.5643329334125156e-06,
+        0.009643793106079102,
+        0.9999885559082031
+      ],
+      "llm_domain": "translation_transcription",
+      "expected_domain_raw": "translation_transcription",
+      "expected_domain_calibrated": "translation_transcription"
+    },
+    {
+      "domain": [
+        1.1522363507765476e-07,
+        0.00012799609976354986,
+        7.697134947193263e-07,
+        1.967868684005225e-06,
+        1.805045428682206e-07,
+        0.999985933303833,
+        0.00012546151992864907,
+        1.2582050885612261e-06
+      ],
+      "llm_domain": "roleplay",
+      "expected_domain_raw": "roleplay",
+      "expected_domain_calibrated": "roleplay"
+    },
+    {
+      "domain": [
+        2.3057155829064868e-07,
+        0.0015176654560491443,
+        0.6605109572410583,
+        0.0001017637550830841,
+        0.45040446519851685,
+        7.545312818990624e-09,
+        0.0009635565220378339,
+        6.216716428752989e-05
+      ],
+      "llm_domain": "practical_content",
+      "expected_domain_raw": "information_seeking",
+      "expected_domain_calibrated": "information_seeking"
+    },
+    {
+      "domain": [
+        1.158667188860818e-07,
+        0.023171275854110718,
+        0.0005369798745959997,
+        0.0003126170195173472,
+        0.0016821922035887837,
+        1.3595262693399945e-08,
+        0.9931029081344604,
+        0.012348511256277561
+      ],
+      "llm_domain": "task_assistance",
+      "expected_domain_raw": "task_assistance",
+      "expected_domain_calibrated": "task_assistance"
+    },
+    {
+      "domain": [
+        9.538294762023725e-06,
+        0.00020711682736873627,
+        0.0006038886494934559,
+        0.0001938910281751305,
+        0.999381422996521,
+        1.9932271243305877e-05,
+        0.004097606521099806,
+        3.075159838772379e-05
+      ],
+      "llm_domain": "practical_content",
+      "expected_domain_raw": "practical_content",
+      "expected_domain_calibrated": "practical_content"
+    },
+    {
+      "domain": [
+        5.286763027356756e-09,
+        0.9480390548706055,
+        8.95675620995462e-05,
+        0.1807401031255722,
+        0.0002176211855839938,
+        4.517596323694306e-07,
+        0.7045096158981323,
+        1.4881462448101956e-05
+      ],
+      "llm_domain": "task_assistance",
+      "expected_domain_raw": "creative_writing",
+      "expected_domain_calibrated": "creative_writing"
+    },
+    {
+      "domain": [
+        7.496438684029272e-06,
+        1.3226231665441901e-08,
+        2.193057980548474e-06,
+        0.0002778044145088643,
+        2.071891321975272e-05,
+        1.0,
+        0.0005269126268103719,
+        5.014003363612574e-06
+      ],
+      "llm_domain": "roleplay",
+      "expected_domain_raw": "roleplay",
+      "expected_domain_calibrated": "roleplay"
+    },
+    {
+      "domain": [
+        2.5656278879182537e-08,
+        2.510548924306022e-08,
+        9.202738482372297e-08,
+        1.9593223896663403e-06,
+        4.2829364247154444e-05,
+        6.772301830437755e-09,
+        0.001748344860970974,
+        1.0
+      ],
+      "llm_domain": "translation_transcription",
+      "expected_domain_raw": "translation_transcription",
+      "expected_domain_calibrated": "translation_transcription"
+    },
+    {
+      "domain": [
+        0.0005218774895183742,
+        0.0006867959164083004,
+        0.0013515003956854343,
+        0.9970177412033081,
+        0.00674847885966301,
+        1.1577695886444417e-06,
+        2.883590968849603e-05,
+        2.548174222738453e-07
+      ],
+      "llm_domain": "other",
+      "expected_domain_raw": "other",
+      "expected_domain_calibrated": "other"
+    },
+    {
+      "domain": [
+        1.5608855392201804e-05,
+        0.000514104962348938,
+        0.00016740208957344294,
+        0.0001578662049723789,
+        0.9993095397949219,
+        2.6988727768184617e-05,
+        0.0011144345626235008,
+        8.248734957305714e-06
+      ],
+      "llm_domain": "practical_content",
+      "expected_domain_raw": "practical_content",
+      "expected_domain_calibrated": "practical_content"
+    },
+    {
+      "domain": [
+        2.4829105882417934e-07,
+        0.0018647877732291818,
+        5.2609568228945136e-05,
+        0.0024318774230778217,
+        0.029039349406957626,
+        4.142673333262792e-06,
+        0.9987332224845886,
+        0.002825674368068576
+      ],
+      "llm_domain": "task_assistance",
+      "expected_domain_raw": "task_assistance",
+      "expected_domain_calibrated": "task_assistance"
+    },
+    {
+      "domain": [
+        5.840580797666917e-06,
+        0.0030340019147843122,
+        4.925805569655495e-06,
+        0.0004085631517227739,
+        0.0008470554603263736,
+        4.216949946567183e-06,
+        0.999054491519928,
+        0.07035814225673676
+      ],
+      "llm_domain": "task_assistance",
+      "expected_domain_raw": "task_assistance",
+      "expected_domain_calibrated": "task_assistance"
+    },
+    {
+      "domain": [
+        3.1904130537441233e-07,
+        0.002065241103991866,
+        0.0003228019049856812,
+        0.01266284566372633,
+        0.15857481956481934,
+        0.0002819458895828575,
+        0.9980530738830566,
+        7.515486686315853e-06
+      ],
+      "llm_domain": "task_assistance",
+      "expected_domain_raw": "task_assistance",
+      "expected_domain_calibrated": "task_assistance"
+    },
+    {
+      "domain": [
+        0.00010724396997829899,
+        3.0897361492226993e-12,
+        3.114287161487539e-10,
+        0.0007346848142333329,
+        7.549779184046201e-07,
+        1.0,
+        0.00011253512639086694,
+        5.15456576977158e-07
+      ],
+      "llm_domain": "roleplay",
+      "expected_domain_raw": "roleplay",
+      "expected_domain_calibrated": "roleplay"
+    },
+    {
+      "domain": [
+        0.9817511439323425,
+        0.004869635216891766,
+        0.0013974407920613885,
+        0.44817110896110535,
+        3.4848679206334054e-05,
+        0.804160475730896,
+        0.01627608761191368,
+        1.2033916618747753e-06
+      ],
+      "llm_domain": "roleplay",
+      "expected_domain_raw": "casual_interaction",
+      "expected_domain_calibrated": "casual_interaction"
+    },
+    {
+      "domain": [
+        0.06960336863994598,
+        3.646650293376297e-05,
+        0.0002252700214739889,
+        0.9999254941940308,
+        0.0028122998774051666,
+        1.7328947023997898e-06,
+        4.1220073399017565e-06,
+        9.608149866835447e-07
+      ],
+      "llm_domain": "other",
+      "expected_domain_raw": "other",
+      "expected_domain_calibrated": "other"
+    },
+    {
+      "domain": [
+        0.544680655002594,
+        0.00022232158516999334,
+        0.0012175122974440455,
+        0.8357047438621521,
+        3.483083855826408e-05,
+        0.0028984493110328913,
+        0.002523109782487154,
+        0.00351301534101367
+      ],
+      "llm_domain": "other",
+      "expected_domain_raw": "other",
+      "expected_domain_calibrated": "casual_interaction"
+    },
+    {
+      "domain": [
+        0.9987878203392029,
+        0.8055282831192017,
+        8.950053597800434e-05,
+        0.26487407088279724,
+        3.1315578326029936e-06,
+        0.0006874572718515992,
+        6.690408918075264e-05,
+        0.0001117062201956287
+      ],
+      "llm_domain": "casual_interaction",
+      "expected_domain_raw": "casual_interaction",
+      "expected_domain_calibrated": "casual_interaction"
+    },
+    {
+      "domain": [
+        0.9825581908226013,
+        0.0012441197177395225,
+        0.005712806712836027,
+        0.963495135307312,
+        0.6304305195808411,
+        0.008989846333861351,
+        0.005541632883250713,
+        1.2504343430919107e-05
+      ],
+      "llm_domain": "casual_interaction",
+      "expected_domain_raw": "casual_interaction",
+      "expected_domain_calibrated": "casual_interaction"
+    },
+    {
+      "domain": [
+        0.9724752902984619,
+        1.0206227671005763e-05,
+        0.00038552776095457375,
+        0.07532196491956711,
+        0.00031976282480172813,
+        0.025563694536685944,
+        1.629455800866708e-05,
+        1.3161880815459881e-05
+      ],
+      "llm_domain": "casual_interaction",
+      "expected_domain_raw": "casual_interaction",
+      "expected_domain_calibrated": "casual_interaction"
+    },
+    {
+      "domain": [
+        0.016191860660910606,
+        0.000166508078109473,
+        0.00026280421297997236,
+        0.9997594952583313,
+        0.004733726382255554,
+        8.291895596812537e-07,
+        8.247225196100771e-06,
+        4.863267690780049e-07
+      ],
+      "llm_domain": "other",
+      "expected_domain_raw": "other",
+      "expected_domain_calibrated": "other"
+    }
+  ]
+}

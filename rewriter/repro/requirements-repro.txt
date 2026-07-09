@@ -1,0 +1,32 @@
+# Dependencies for the reproduction path only (rewriter/repro/: dataset build
+# + GEPA prompt optimization). The runtime rewriter has its own, smaller deps.
+#
+# Python >=3.11. The graders (../../Graders) additionally need Azure AD auth
+# (`az login`); see Graders/README.md.
+
+# task model (Qwen3-4B) + ToxicChat T5 filter
+torch>=2.4
+transformers>=4.56,<5
+accelerate>=1.0.0
+sentencepiece>=0.2.0
+
+# source datasets (BeaverTails, RealToxicityPrompts)
+datasets>=2.18.0
+
+# GEPA prompt optimization (dspy.teleprompt.GEPA + its backend)
+dspy>=3.1.0  # 3.0.0 lacks GEPA's gepa_kwargs (required for cloudpickle checkpoints)
+gepa>=0.0.27
+cloudpickle>=3.0.0
+numpy>=1.26
+
+# observability
+wandb>=0.18.0
+
+# judges / graders
+openai>=1.104.0          # gpt-5 reflection LM (via dspy/litellm) + graders transport
+anthropic>=0.40.0        # claude-opus-4-8 golden labels + harm veto
+azure-identity>=1.17.0   # Graders package auth (Azure AD)
+pyyaml>=6.0.0            # Graders endpoint config
+
+# The REFUSE/REWRITE routing probe is vendored at rewriter/routing_probe/
+# (no external install needed).
