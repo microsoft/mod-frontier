@@ -61,3 +61,49 @@ class TestModules:
         from rewriter.rewrite import MAX_NEW_TOKENS
 
         assert MAX_TOKENS == MAX_NEW_TOKENS
+
+
+class TestDocsScope:
+    """The latency docs must describe rewrite-stage scope, not user wait.
+
+    Regression for the re-screen-before-display correction: the harness
+    measures conditional routing + rewrite generation after a response is
+    flagged; under the paper's serving policy the first streamed token is
+    not user-visible, so TTFT is a serving diagnostic.
+    """
+
+    README = Path(REPO_ROOT) / "rewriter" / "repro" / "latency" / "README.md"
+
+    def _texts(self):
+        import rewriter.repro.latency.measure_rewrite as mr
+
+        return {
+            "README": self.README.read_text(encoding="utf-8"),
+            "docstring": mr.__doc__ or "",
+        }
+
+    def test_no_user_wait_claim(self):
+        for name, text in self._texts().items():
+            low = text.lower()
+            assert "what a user waits" not in low, name
+            assert "what a user would wait" not in low, name
+
+    def test_no_ttft_user_visible_claim(self):
+        for name, text in self._texts().items():
+            low = text.lower()
+            assert "users see output from ttft onward" not in low, name
+            # TTFT must be framed as not user-visible under the paper's policy
+            assert "not yet user-visible" in low, name
+            assert "serving diagnostic" in low, name
+
+    def test_scope_exclusions_stated(self):
+        joined = {n: " ".join(t.lower().split()) for n, t in self._texts().items()}
+        for name, low in joined.items():
+            assert "re-screen" in low, name
+            assert "excludes original-response generation" in low, name
+
+    def test_e2e_s_defined_as_rewrite_stage(self):
+        joined = {n: " ".join(t.lower().split()) for n, t in self._texts().items()}
+        for name, low in joined.items():
+            assert "route + prompt select" in low or "route + select" in low, name
+            assert "not full conversation end-to-end" in low, name
