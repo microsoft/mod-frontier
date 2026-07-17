@@ -1,15 +1,24 @@
 #!/usr/bin/env python3
 """Serving-latency measurement of the rewrite pipeline (route -> select -> rewrite).
 
-Measures what a user would wait for a single flagged response, under a
-serving-style deployment rather than the batched evaluator:
+Measures the conditional cost of the rewrite stage: probe routing plus
+rewrite generation, timed after an original response already exists and has
+been flagged by the response filter. It excludes original-response
+generation, the initial response-filter call, any buffering, and the final
+moderation re-screen that the paper's serving policy applies before a
+rewrite is displayed. Measured under a serving-style deployment rather than
+the batched evaluator:
 
 * a **dedicated vLLM server** for ``Qwen/Qwen3-4B-Instruct-2507`` (any
   OpenAI-compatible server works), so generation latency is not confounded
   with model-load or co-tenant traffic;
 * **serial dispatch** -- one request at a time, so each sample sees an idle
   server (latency, not throughput);
-* **streaming**, so time-to-first-token (TTFT) is observable;
+* **streaming**, so time-to-first-token (TTFT) is observable. TTFT is when
+  the rewrite server emits its first token; under the paper's full-response
+  re-screen-before-display policy that token is not yet user-visible, so
+  TTFT is a serving diagnostic (a stream-then-retract policy that shows
+  tokens as they stream is a different serving policy, not evaluated here);
 * **warm-up samples** (excluded from the stats) before measurement, so CUDA
   graph/cache warm-up doesn't inflate the first rows;
 * a **fixed seed** (42) drawing warm-up + measurement rows from the T5-flagged
@@ -18,8 +27,12 @@ serving-style deployment rather than the batched evaluator:
 Per sample it times: ``route_s`` (probe forward pass, batch of 1),
 ``select_s`` (prompt-pack lookup), ``ttft_s`` (request send -> first streamed
 content token), ``gen_s`` (request send -> final token, including the
-bare-refusal retry when it fires -- that retry is real user-visible latency),
-and ``e2e_s`` (route + select + gen).
+bare-refusal retry when it fires -- the retry lengthens the rewrite stage,
+so it counts), and ``e2e_s`` (route + select + complete rewrite generation).
+``e2e_s`` is the rewrite-stage total, not full conversation end-to-end
+latency and not time to final display eligibility -- the final moderation
+re-screen is outside this harness. The JSON key name is kept for
+compatibility with existing consumers of the output file.
 
 Routing, prompt selection, and message construction are imported from the
 package itself (``rewriter.routing``, ``rewriter.pipeline.select_prompt``,
@@ -173,8 +186,8 @@ def main() -> None:
         ttft, gen_wall, text = stream_once(messages)
 
         # The serving path retries a bare one-liner refusal once with a
-        # contextual-refusal prompt; that retry is user-visible latency, so it
-        # counts when it fires (rare by design).
+        # contextual-refusal prompt; the retry lengthens the rewrite stage,
+        # so it counts toward gen_s when it fires (rare by design).
         retried = False
         if is_bare_refusal(text):
             retry_msgs = build_refusal_retry_messages(response_text, prompt_text,
@@ -243,7 +256,7 @@ def main() -> None:
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
     e = out["stage_stats"]["e2e_s"]
-    print(f"E2E mean {e['mean']:.3f}s median {e['median']:.3f}s "
+    print(f"Rewrite-stage total (e2e_s) mean {e['mean']:.3f}s median {e['median']:.3f}s "
           f"P90 {e['p90']:.3f}s P95 {e['p95']:.3f}s", flush=True)
     print(f"Wrote {args.output}", flush=True)
 

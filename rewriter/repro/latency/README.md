@@ -5,8 +5,12 @@ measurement of the rewrite stage and the T5 filter, on one GPU.
 
 ## Methodology
 
-**Rewrite pipeline** ([`measure_rewrite.py`](measure_rewrite.py)) — what a
-user waits for one flagged response:
+**Rewrite pipeline** ([`measure_rewrite.py`](measure_rewrite.py)) — the
+conditional cost of the rewrite stage itself: probe routing plus rewrite
+generation, timed *after* an original response already exists and has been
+flagged by the response filter. It excludes original-response generation,
+the initial response-filter call, any buffering, and the final moderation
+re-screen that the paper's serving policy applies before a rewrite is shown:
 
 - **Dedicated server.** Generation runs on a dedicated vLLM (or any
   OpenAI-compatible) server, so latency is not confounded with model load or
@@ -15,8 +19,12 @@ user waits for one flagged response:
 - **Serial dispatch.** One request at a time against an idle server — this
   measures latency, not throughput.
 - **Streaming.** Time-to-first-token (TTFT) is recorded from the request send
-  to the first streamed content token; users see output from TTFT onward,
-  long before the full generation finishes.
+  to the first streamed content token — i.e. when the rewrite server emits
+  its first token. Under the paper's full-response re-screen-before-display
+  policy that token is not yet user-visible (the complete rewrite is
+  re-screened before display), so TTFT here is a serving diagnostic, not a
+  user-visible-latency claim. A stream-then-retract policy, where tokens are
+  shown as they stream, is a different serving policy not evaluated here.
 - **Warm-up.** 3 warm-up samples run first and are excluded, so CUDA/cache
   warm-up doesn't inflate the stats.
 - **Fixed sample.** 3 + 30 rows drawn from the T5-flagged set with seed 42.
@@ -43,7 +51,12 @@ H100 80GB, bfloat16):
 | Prompt selection | ~5 µs | ~5 µs | ~5 µs |
 | Time to first token | 0.036 s | 0.029 s | 0.060 s |
 | Generation (incl. retry) | 1.52 s | 0.38 s | 3.78 s |
-| **End-to-end** | **1.60 s** | **0.47 s** | **3.86 s** |
+| **Rewrite-stage total (`e2e_s`)** | **1.60 s** | **0.47 s** | **3.86 s** |
+
+`e2e_s` = route + prompt select + complete rewrite generation. It is not
+full conversation end-to-end latency, and not time to final display
+eligibility (the final moderation re-screen is outside this harness; see
+`measure_t5.py` for the filter's per-sample cost).
 
 T5 filter, same hardware, batch 32 over all 5,654 rows: 8.5 ms/sample
 (prompt side), 11.8 ms/sample (response side), amortized.
